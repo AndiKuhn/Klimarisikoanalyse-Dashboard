@@ -849,6 +849,29 @@ body {
                 <input type="text" id="cds-months" value="01,02,03,04,05,06,07,08,09,10,11,12" placeholder="01,02,...,12">
               </div>
               <div class="form-group">
+                <label>Tage</label>
+                <select id="cds-days">
+                  <option value="all">Alle Tage (01–31)</option>
+                  <option value="01">Nur 1. des Monats</option>
+                  <option value="01,15">1. und 15. des Monats</option>
+                  <option value="custom">Benutzerdefiniert</option>
+                </select>
+              </div>
+              <div class="form-group" id="cds-custom-days-group" style="display:none">
+                <label>Tage (kommasepariert)</label>
+                <input type="text" id="cds-custom-days" placeholder="01,02,03,...,31" value="01,15">
+              </div>
+              <div class="form-group">
+                <label>Uhrzeit(en)</label>
+                <select id="cds-time">
+                  <option value="12:00">12:00 (Mittag)</option>
+                  <option value="00:00">00:00 (Mitternacht)</option>
+                  <option value="00:00,06:00,12:00,18:00">00/06/12/18 (6-stündlich)</option>
+                  <option value="all">Alle Stunden (00–23)</option>
+                </select>
+                <span class="hint">Monatsmittel ignorieren Tage & Uhrzeiten</span>
+              </div>
+              <div class="form-group">
                 <label>Region (N/W/S/E)</label>
                 <input type="text" id="cds-area" value="55,5,47,16" placeholder="55,5,47,16 (Deutschland)">
                 <span class="hint">Nord, West, Süd, Ost</span>
@@ -1733,6 +1756,12 @@ document.getElementById('eu-mode').addEventListener('change', e => {
     e.target.value === 'sparql' ? 'block' : 'none';
 });
 
+/* CDS day selector toggle */
+document.getElementById('cds-days').addEventListener('change', e => {
+  document.getElementById('cds-custom-days-group').style.display =
+    e.target.value === 'custom' ? 'flex' : 'none';
+});
+
 /* ═══════════════════════════════════════════════════════
    API KEY MANAGEMENT (localStorage only)
    ═══════════════════════════════════════════════════════ */
@@ -1882,18 +1911,48 @@ function buildCDSRequest() {
   }
   const months = document.getElementById('cds-months').value.split(',').map(s => s.trim());
   const area = document.getElementById('cds-area').value.split(',').map(Number);
+  const product = document.getElementById('cds-product').value;
+
+  // Days
+  const daysSelect = document.getElementById('cds-days').value;
+  let days;
+  if (daysSelect === 'all') {
+    days = Array.from({length: 31}, (_, i) => String(i + 1).padStart(2, '0'));
+  } else if (daysSelect === 'custom') {
+    days = document.getElementById('cds-custom-days').value.split(',').map(s => s.trim());
+  } else {
+    days = daysSelect.split(',').map(s => s.trim());
+  }
+
+  // Time
+  const timeSelect = document.getElementById('cds-time').value;
+  let time;
+  if (timeSelect === 'all') {
+    time = Array.from({length: 24}, (_, i) => String(i).padStart(2, '0') + ':00');
+  } else {
+    time = timeSelect.split(',').map(s => s.trim());
+  }
+
+  const request = {
+    product_type: [product],
+    variable: [document.getElementById('cds-variable').value],
+    year: years,
+    month: months,
+    day: days,
+    time: time,
+    area: area,
+    data_format: document.getElementById('cds-format').value,
+  };
+
+  // Monthly averaged products don't use day/time
+  if (product === 'monthly_averaged_reanalysis') {
+    delete request.day;
+    delete request.time;
+  }
+
   return {
     dataset: 'reanalysis-era5-single-levels',
-    request: {
-      product_type: [document.getElementById('cds-product').value],
-      variable: [document.getElementById('cds-variable').value],
-      year: years,
-      month: months,
-      day: ['01'],
-      time: ['12:00'],
-      area: area,
-      data_format: document.getElementById('cds-format').value,
-    }
+    request,
   };
 }
 
@@ -1965,33 +2024,66 @@ async function queryCDS() {
 }
 
 async function pollCDSJob(jobId, token, progressEl) {
+  const jobUrl = `https://cds.climate.copernicus.eu/api/retrieve/v1/jobs/${jobId}`;
+  log('cds', 'info', `Job-URL: <a href="${jobUrl}" target="_blank" style="color:var(--accent)">${jobUrl}</a>`);
+
   for (let i = 0; i < 60; i++) {
     await new Promise(r => setTimeout(r, 5000));
     try {
-      const resp = await fetch(`https://cds.climate.copernicus.eu/api/retrieve/v1/jobs/${jobId}`, {
+      const resp = await fetch(jobUrl, {
         headers: { 'PRIVATE-TOKEN': token },
       });
       const job = await resp.json();
       const status = job.status || job.state || 'unknown';
-      log('cds', 'info', `Job ${jobId}: Status = ${status}`);
+      log('cds', 'info', `Job: Status = <strong>${status}</strong>`);
       progressEl.style.width = Math.min(60 + i * 2, 95) + '%';
 
       if (status === 'successful' || status === 'completed') {
         state.results.cds = job;
         progressEl.style.width = '100%';
-        log('cds', 'ok', 'Download bereit! URL: ' + (job.location || job.result?.[0]?.location || 'siehe Ergebnis'));
+        const dlUrl = job.location || job.links?.find(l => l.rel === 'results')?.href || '';
+        if (dlUrl) {
+          log('cds', 'ok', `Download bereit: <a href="${dlUrl}" target="_blank" style="color:var(--accent)">${dlUrl}</a>`);
+        } else {
+          log('cds', 'ok', 'Job abgeschlossen. Ergebnis: ' + JSON.stringify(job).slice(0, 400));
+        }
         document.getElementById('cds-export').style.display = 'flex';
         return;
       }
       if (status === 'failed') {
-        log('cds', 'err', 'Job fehlgeschlagen: ' + JSON.stringify(job).slice(0, 400));
+        // Extract error message from job response
+        const errMsg = job.message || job.error || '';
+        const errDetail = job.links?.find(l => l.rel === 'monitor')?.href || '';
+        log('cds', 'err', `<strong>Job fehlgeschlagen.</strong>`);
+        if (errMsg) {
+          log('cds', 'err', 'Grund: ' + errMsg);
+        }
+        // Try to get detailed error from results endpoint
+        try {
+          const resultsUrl = job.links?.find(l => l.rel === 'results')?.href;
+          if (resultsUrl) {
+            const errResp = await fetch(resultsUrl, { headers: { 'PRIVATE-TOKEN': token } });
+            const errData = await errResp.json();
+            const detail = errData.detail || errData.message || errData.traceback || JSON.stringify(errData).slice(0, 500);
+            log('cds', 'err', 'Detail: ' + detail);
+          }
+        } catch(de) { /* silent */ }
+        // Show full job response for debugging
+        log('cds', 'warn', 'Vollständige Antwort:');
+        log('cds', 'info', JSON.stringify(job, null, 2).replace(/\n/g, '<br>').replace(/ /g, '&nbsp;').replace(/(https?:\/\/[^\s"<]+)/g, '<a href="$1" target="_blank" style="color:var(--accent)">$1</a>'));
+        // Common fix suggestions
+        log('cds', 'warn', '<strong>Häufige Ursachen:</strong>');
+        log('cds', 'info', '• Lizenzbedingungen nicht akzeptiert → <a href="https://cds.climate.copernicus.eu/datasets/reanalysis-era5-single-levels" target="_blank" style="color:var(--accent)">Dataset-Seite öffnen</a> und Lizenz akzeptieren');
+        log('cds', 'info', '• Ungültige Parameter-Kombination (Variable / Produkt-Typ nicht verfügbar)');
+        log('cds', 'info', '• Region zu klein oder außerhalb des Datensatzes');
+        log('cds', 'info', '• Tipp: Nutze 👁 Request-Preview und vergleiche mit dem CDS Download-Formular');
         return;
       }
     } catch(e) {
       log('cds', 'warn', 'Polling-Fehler: ' + e.message);
     }
   }
-  log('cds', 'warn', 'Timeout nach 5 Minuten. Job läuft ggf. noch — prüfe das CDS-Dashboard.');
+  log('cds', 'warn', 'Timeout nach 5 Minuten. Job läuft ggf. noch — prüfe: <a href="https://cds.climate.copernicus.eu/requests" target="_blank" style="color:var(--accent)">CDS Request-Dashboard</a>');
 }
 
 /* ═══════════════════════════════════════════════════════

@@ -1,0 +1,2839 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ClimateRisk Data Hub — Klimarisikoanalyse</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,700&family=JetBrains+Mono:wght@400;500&family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,700;1,9..144,400&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════
+   CSS VARIABLES & THEME
+   ═══════════════════════════════════════════ */
+:root {
+  --bg:        #0C1117;
+  --surface:   #151B24;
+  --surface-2: #1C2430;
+  --surface-3: #232C3A;
+  --border:    #2A3444;
+  --border-hl: #3A4A5C;
+  --text:      #E2E8F0;
+  --text-2:    #94A3B8;
+  --text-3:    #64748B;
+  --accent:    #22D3EE;
+  --accent-2:  #06B6D4;
+  --green:     #34D399;
+  --green-bg:  rgba(52,211,153,0.08);
+  --amber:     #FBBF24;
+  --amber-bg:  rgba(251,191,36,0.08);
+  --red:       #F87171;
+  --red-bg:    rgba(248,113,113,0.08);
+  --blue:      #60A5FA;
+  --purple:    #A78BFA;
+  --radius:    8px;
+  --radius-lg: 12px;
+  --font:      'DM Sans', sans-serif;
+  --mono:      'JetBrains Mono', monospace;
+  --display:   'Fraunces', serif;
+  --shadow:    0 4px 24px rgba(0,0,0,0.3);
+  --transition: 0.2s cubic-bezier(0.4,0,0.2,1);
+}
+
+/* ═══════════════════════════════════════════
+   RESET & BASE
+   ═══════════════════════════════════════════ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 15px; scroll-behavior: smooth; }
+body {
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+  min-height: 100vh;
+}
+::selection { background: var(--accent); color: var(--bg); }
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--surface); }
+::-webkit-scrollbar-thumb { background: var(--border-hl); border-radius: 3px; }
+
+/* ═══════════════════════════════════════════
+   LAYOUT
+   ═══════════════════════════════════════════ */
+.app { display: flex; min-height: 100vh; }
+.sidebar {
+  width: 280px;
+  min-width: 280px;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+.main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  max-height: 100vh;
+}
+.main-header {
+  padding: 1.2rem 2rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+.main-content { padding: 2rem; flex: 1; }
+
+/* ═══════════════════════════════════════════
+   SIDEBAR
+   ═══════════════════════════════════════════ */
+.logo {
+  padding: 1.5rem 1.2rem;
+  border-bottom: 1px solid var(--border);
+}
+.logo h1 {
+  font-family: var(--display);
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: -0.02em;
+}
+.logo span {
+  font-size: 0.75rem;
+  color: var(--text-3);
+  font-weight: 400;
+  display: block;
+  margin-top: 2px;
+}
+
+.nav { padding: 1rem 0; flex: 1; }
+.nav-section {
+  padding: 0 1rem;
+  margin-bottom: 1.5rem;
+}
+.nav-section-title {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-3);
+  padding: 0 0.5rem;
+  margin-bottom: 0.5rem;
+}
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.55rem 0.7rem;
+  border-radius: var(--radius);
+  color: var(--text-2);
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: var(--transition);
+  user-select: none;
+}
+.nav-item:hover { background: var(--surface-2); color: var(--text); }
+.nav-item.active { background: rgba(34,211,238,0.08); color: var(--accent); }
+.nav-item .icon { width: 18px; text-align: center; font-size: 0.9rem; flex-shrink: 0; }
+.nav-item .badge {
+  margin-left: auto;
+  background: var(--surface-3);
+  color: var(--text-3);
+  font-size: 0.65rem;
+  padding: 2px 6px;
+  border-radius: 10px;
+  font-family: var(--mono);
+}
+
+.sidebar-footer {
+  padding: 1rem 1.2rem;
+  border-top: 1px solid var(--border);
+  font-size: 0.72rem;
+  color: var(--text-3);
+}
+.sidebar-footer a { color: var(--accent-2); text-decoration: none; }
+
+/* ═══════════════════════════════════════════
+   API KEY MANAGEMENT
+   ═══════════════════════════════════════════ */
+.key-manager {
+  padding: 1rem 1.2rem;
+  border-top: 1px solid var(--border);
+}
+.key-manager summary {
+  cursor: pointer;
+  font-size: 0.75rem;
+  color: var(--text-3);
+  font-weight: 500;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.key-manager summary::before { content: '🔑'; }
+.key-manager[open] summary { color: var(--text-2); margin-bottom: 0.6rem; }
+.key-input-group { margin-bottom: 0.5rem; }
+.key-input-group label {
+  display: block;
+  font-size: 0.65rem;
+  color: var(--text-3);
+  margin-bottom: 2px;
+  font-weight: 500;
+}
+.key-input-group input {
+  width: 100%;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text);
+  padding: 0.35rem 0.5rem;
+  font-size: 0.75rem;
+  font-family: var(--mono);
+  outline: none;
+  transition: var(--transition);
+}
+.key-input-group input:focus { border-color: var(--accent); }
+.key-input-group input::placeholder { color: var(--text-3); }
+
+.btn-save-keys {
+  width: 100%;
+  margin-top: 0.5rem;
+  padding: 0.4rem;
+  background: var(--accent);
+  color: var(--bg);
+  border: none;
+  border-radius: 4px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+}
+.btn-save-keys:hover { background: var(--accent-2); }
+.key-status {
+  font-size: 0.65rem;
+  margin-top: 0.3rem;
+  color: var(--green);
+}
+
+/* ═══════════════════════════════════════════
+   HEADER & STATUS
+   ═══════════════════════════════════════════ */
+.breadcrumb {
+  font-size: 0.85rem;
+  color: var(--text-2);
+}
+.breadcrumb strong { color: var(--text); }
+.status-pills { display: flex; gap: 0.5rem; }
+.pill {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.72rem;
+  padding: 0.3rem 0.7rem;
+  border-radius: 20px;
+  font-family: var(--mono);
+}
+.pill.ok { background: var(--green-bg); color: var(--green); }
+.pill.warn { background: var(--amber-bg); color: var(--amber); }
+.pill.err { background: var(--red-bg); color: var(--red); }
+.pill .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+
+/* ═══════════════════════════════════════════
+   PANELS & CARDS
+   ═══════════════════════════════════════════ */
+.panel {
+  display: none;
+  animation: fadeIn 0.3s ease;
+}
+.panel.active { display: block; }
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  margin-bottom: 1.2rem;
+}
+.card-title {
+  font-family: var(--display);
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.card-desc {
+  font-size: 0.82rem;
+  color: var(--text-2);
+  margin-bottom: 1rem;
+  line-height: 1.5;
+}
+
+/* ═══════════════════════════════════════════
+   FORM ELEMENTS
+   ═══════════════════════════════════════════ */
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+.form-group { display: flex; flex-direction: column; gap: 0.3rem; }
+.form-group label {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text-2);
+}
+.form-group input,
+.form-group select,
+.form-group textarea {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  padding: 0.55rem 0.7rem;
+  font-size: 0.85rem;
+  font-family: var(--font);
+  outline: none;
+  transition: var(--transition);
+}
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(34,211,238,0.1);
+}
+.form-group select { cursor: pointer; }
+.form-group textarea { min-height: 80px; resize: vertical; }
+.form-group .hint {
+  font-size: 0.68rem;
+  color: var(--text-3);
+}
+
+.checkbox-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.checkbox-item {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: 0.78rem;
+  transition: var(--transition);
+  user-select: none;
+}
+.checkbox-item:hover { border-color: var(--border-hl); }
+.checkbox-item.selected { border-color: var(--accent); background: rgba(34,211,238,0.06); color: var(--accent); }
+.checkbox-item input { display: none; }
+
+/* ═══════════════════════════════════════════
+   BUTTONS
+   ═══════════════════════════════════════════ */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.6rem 1.2rem;
+  border-radius: var(--radius);
+  font-size: 0.85rem;
+  font-weight: 600;
+  font-family: var(--font);
+  cursor: pointer;
+  border: none;
+  transition: var(--transition);
+}
+.btn-primary { background: var(--accent); color: var(--bg); }
+.btn-primary:hover { background: var(--accent-2); }
+.btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn-secondary {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-2);
+}
+.btn-secondary:hover { border-color: var(--text-2); color: var(--text); }
+.btn-small { padding: 0.35rem 0.7rem; font-size: 0.75rem; }
+.btn-group { display: flex; gap: 0.5rem; margin-top: 1rem; flex-wrap: wrap; }
+
+/* ═══════════════════════════════════════════
+   OUTPUT / LOG
+   ═══════════════════════════════════════════ */
+.output-area {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem;
+  margin-top: 1rem;
+  max-height: 400px;
+  overflow-y: auto;
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  line-height: 1.7;
+}
+.log-line { display: flex; gap: 0.5rem; padding: 2px 0; }
+.log-time { color: var(--text-3); min-width: 70px; flex-shrink: 0; }
+.log-tag {
+  font-size: 0.65rem;
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-weight: 600;
+  min-width: 42px;
+  text-align: center;
+  flex-shrink: 0;
+}
+.log-tag.info { background: rgba(96,165,250,0.15); color: var(--blue); }
+.log-tag.ok { background: var(--green-bg); color: var(--green); }
+.log-tag.err { background: var(--red-bg); color: var(--red); }
+.log-tag.warn { background: var(--amber-bg); color: var(--amber); }
+.log-msg { color: var(--text-2); word-break: break-all; }
+
+/* ═══════════════════════════════════════════
+   DATA TABLE
+   ═══════════════════════════════════════════ */
+.data-table-wrap {
+  overflow-x: auto;
+  margin-top: 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+}
+.data-table th {
+  background: var(--surface-2);
+  padding: 0.6rem 0.8rem;
+  text-align: left;
+  font-weight: 600;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-2);
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+}
+.data-table td {
+  padding: 0.5rem 0.8rem;
+  border-bottom: 1px solid var(--border);
+  font-family: var(--mono);
+  font-size: 0.78rem;
+}
+.data-table tr:hover td { background: rgba(34,211,238,0.03); }
+
+/* ═══════════════════════════════════════════
+   TABS
+   ═══════════════════════════════════════════ */
+.tabs { display: flex; gap: 0; border-bottom: 1px solid var(--border); margin-bottom: 1rem; }
+.tab {
+  padding: 0.6rem 1rem;
+  font-size: 0.8rem;
+  color: var(--text-3);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: var(--transition);
+}
+.tab:hover { color: var(--text-2); }
+.tab.active { color: var(--accent); border-color: var(--accent); }
+
+/* ═══════════════════════════════════════════
+   PROGRESS
+   ═══════════════════════════════════════════ */
+.progress-bar {
+  height: 4px;
+  background: var(--surface-3);
+  border-radius: 2px;
+  overflow: hidden;
+  margin: 0.8rem 0;
+}
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), var(--green));
+  border-radius: 2px;
+  width: 0%;
+  transition: width 0.5s ease;
+}
+
+/* ═══════════════════════════════════════════
+   JSON VIEWER
+   ═══════════════════════════════════════════ */
+.json-viewer {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem;
+  margin-top: 1rem;
+  max-height: 500px;
+  overflow: auto;
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  white-space: pre-wrap;
+  word-break: break-all;
+  line-height: 1.6;
+}
+.json-key { color: var(--accent); }
+.json-string { color: var(--green); }
+.json-number { color: var(--amber); }
+.json-bool { color: var(--purple); }
+.json-null { color: var(--text-3); }
+
+/* ═══════════════════════════════════════════
+   EXPORT TOOLBAR
+   ═══════════════════════════════════════════ */
+.export-bar {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  padding: 0.6rem 1rem;
+  background: var(--surface-2);
+  border-radius: var(--radius);
+  margin-top: 1rem;
+}
+.export-bar span {
+  font-size: 0.75rem;
+  color: var(--text-3);
+  margin-right: auto;
+}
+
+/* ═══════════════════════════════════════════
+   RESPONSIVE
+   ═══════════════════════════════════════════ */
+@media (max-width: 900px) {
+  .app { flex-direction: column; }
+  .sidebar { width: 100%; min-width: unset; max-height: 50vh; }
+  .main { max-height: unset; }
+  .main-content { padding: 1rem; }
+  .form-grid { grid-template-columns: 1fr; }
+}
+
+/* ═══════════════════════════════════════════
+   LOADING SPINNER
+   ═══════════════════════════════════════════ */
+.spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ═══════════════════════════════════════════
+   GEOCODER
+   ═══════════════════════════════════════════ */
+.geocoder {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 0.7rem 2rem;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+.geocoder-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-3);
+  white-space: nowrap;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.geocoder-input-wrap {
+  flex: 1;
+  position: relative;
+}
+.geocoder-input-wrap input {
+  width: 100%;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  padding: 0.5rem 0.7rem 0.5rem 2rem;
+  font-size: 0.85rem;
+  font-family: var(--font);
+  outline: none;
+  transition: var(--transition);
+}
+.geocoder-input-wrap input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(34,211,238,0.1);
+}
+.geocoder-input-wrap input::placeholder { color: var(--text-3); }
+.geocoder-input-wrap .search-icon {
+  position: absolute;
+  left: 0.6rem;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.85rem;
+  color: var(--text-3);
+  pointer-events: none;
+}
+.geocoder-results {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  z-index: 100;
+  max-height: 280px;
+  overflow-y: auto;
+  display: none;
+}
+.geocoder-results.visible { display: block; }
+.geocoder-result {
+  padding: 0.55rem 0.8rem;
+  cursor: pointer;
+  font-size: 0.82rem;
+  border-bottom: 1px solid var(--border);
+  transition: var(--transition);
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+.geocoder-result:last-child { border-bottom: none; }
+.geocoder-result:hover { background: var(--surface-2); }
+.geocoder-result .geo-name { color: var(--text); font-weight: 500; }
+.geocoder-result .geo-detail { color: var(--text-3); font-size: 0.72rem; font-family: var(--mono); }
+.geocoder-current {
+  font-size: 0.72rem;
+  color: var(--text-3);
+  font-family: var(--mono);
+  white-space: nowrap;
+  background: var(--surface-2);
+  padding: 0.35rem 0.6rem;
+  border-radius: var(--radius);
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  max-width: 340px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.geocoder-current .geo-coords { color: var(--accent); }
+.geocoder-radius {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+.geocoder-radius label {
+  font-size: 0.68rem;
+  color: var(--text-3);
+  white-space: nowrap;
+}
+.geocoder-radius select {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text);
+  padding: 0.3rem 0.4rem;
+  font-size: 0.72rem;
+  font-family: var(--mono);
+  outline: none;
+}
+
+@media (max-width: 900px) {
+  .geocoder { flex-wrap: wrap; padding: 0.5rem 1rem; }
+  .geocoder-current { max-width: 100%; }
+}
+
+/* ═══════════════════════════════════════════
+   EMPTY STATE
+   ═══════════════════════════════════════════ */
+.empty-state {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: var(--text-3);
+}
+.empty-state .icon { font-size: 2.5rem; margin-bottom: 0.8rem; }
+.empty-state p { font-size: 0.85rem; max-width: 400px; margin: 0 auto; }
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- ════════════════════════════════════════
+       SIDEBAR
+       ════════════════════════════════════════ -->
+  <aside class="sidebar">
+    <div class="logo">
+      <h1>ClimateRisk</h1>
+      <span>Data Hub · Klimarisikoanalyse v1.0</span>
+    </div>
+
+    <nav class="nav">
+      <div class="nav-section">
+        <div class="nav-section-title">Datenquellen</div>
+        <div class="nav-item active" data-panel="cds">
+          <span class="icon">🌡️</span> CDS · ERA5 / CMIP6
+          <span class="badge">CDS</span>
+        </div>
+        <div class="nav-item" data-panel="ads">
+          <span class="icon">🌫️</span> ADS · CAMS
+          <span class="badge">ADS</span>
+        </div>
+        <div class="nav-item" data-panel="marine">
+          <span class="icon">🌊</span> Marine Service
+          <span class="badge">CMEMS</span>
+        </div>
+        <div class="nav-item" data-panel="land">
+          <span class="icon">🛰️</span> Land Monitoring
+          <span class="badge">CLMS</span>
+        </div>
+        <div class="nav-item" data-panel="dwd">
+          <span class="icon">⛅</span> DWD · Bright Sky
+          <span class="badge">OFFEN</span>
+        </div>
+        <div class="nav-item" data-panel="osm">
+          <span class="icon">🗺️</span> OpenStreetMap
+          <span class="badge">OFFEN</span>
+        </div>
+        <div class="nav-item" data-panel="eudata">
+          <span class="icon">🇪🇺</span> EU Open Data
+          <span class="badge">OFFEN</span>
+        </div>
+      </div>
+
+      <div class="nav-section">
+        <div class="nav-section-title">Werkzeuge</div>
+        <div class="nav-item" data-panel="batch">
+          <span class="icon">📦</span> Batch-Abfrage
+        </div>
+        <div class="nav-item" data-panel="history">
+          <span class="icon">📋</span> Abfrage-Historie
+        </div>
+        <div class="nav-item" data-panel="docs">
+          <span class="icon">📖</span> API-Dokumentation
+        </div>
+      </div>
+    </nav>
+
+    <details class="key-manager" id="keyManager">
+      <summary>API-Schlüssel verwalten</summary>
+      <div class="key-input-group">
+        <label>Copernicus CDS / ADS Token</label>
+        <input type="password" id="keyCDS" placeholder="Personal Access Token">
+      </div>
+      <div class="key-input-group">
+        <label>Copernicus Marine (CMEMS)</label>
+        <input type="password" id="keyMarine" placeholder="Username:Password">
+      </div>
+      <div class="key-input-group">
+        <label>EU Open Data Portal</label>
+        <input type="password" id="keyEU" placeholder="API Key (optional)">
+      </div>
+      <button class="btn-save-keys" onclick="saveKeys()">Schlüssel speichern (lokal)</button>
+      <div class="key-status" id="keyStatus"></div>
+    </details>
+
+    <div class="sidebar-footer">
+      Open Source · MIT Lizenz<br>
+      <a href="https://github.com" target="_blank">GitHub Repo</a> · v1.0.0
+    </div>
+  </aside>
+
+  <!-- ════════════════════════════════════════
+       MAIN
+       ════════════════════════════════════════ -->
+  <div class="main">
+    <header class="main-header">
+      <div class="breadcrumb" id="breadcrumb">
+        Datenquellen › <strong>CDS · ERA5 / CMIP6</strong>
+      </div>
+      <div class="status-pills" id="statusPills">
+        <div class="pill ok"><span class="dot"></span> DWD</div>
+        <div class="pill ok"><span class="dot"></span> OSM</div>
+        <div class="pill warn"><span class="dot"></span> CDS</div>
+      </div>
+    </header>
+
+    <!-- ═══════════ GEOCODER BAR ═══════════ -->
+    <div class="geocoder">
+      <span class="geocoder-label">📍 Standort</span>
+      <div class="geocoder-input-wrap">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="geocoder-input"
+               placeholder="Adresse, Stadt oder Koordinaten eingeben (z.B. Frankfurt am Main, 50.11/8.68)"
+               autocomplete="off">
+        <div class="geocoder-results" id="geocoder-results"></div>
+      </div>
+      <div class="geocoder-radius">
+        <label>Radius:</label>
+        <select id="geocoder-radius">
+          <option value="0.1">~10 km</option>
+          <option value="0.5" selected>~50 km</option>
+          <option value="1">~100 km</option>
+          <option value="2">~200 km</option>
+          <option value="4">~400 km (DACH)</option>
+        </select>
+      </div>
+      <div class="geocoder-current" id="geocoder-current">
+        <span>📍</span>
+        <span>Frankfurt am Main</span>
+        <span class="geo-coords">50.11, 8.68</span>
+      </div>
+      <button class="btn btn-small btn-secondary" onclick="applyGeocoderToAllFields()" title="Koordinaten in alle Panels übernehmen">↻ Übernehmen</button>
+    </div>
+
+    <div class="main-content">
+
+      <!-- ══════════════════════════════════
+           PANEL: CDS (ERA5 / CMIP6)
+           ══════════════════════════════════ -->
+      <div class="panel active" id="panel-cds">
+        <div class="card">
+          <div class="card-title">🌡️ Copernicus Climate Data Store</div>
+          <div class="card-desc">
+            Zugriff auf ERA5 Reanalysis, CMIP6 Klimaprojektionen und weitere Klima-Datensätze.
+            Authentifizierung via Personal Access Token (PAT) vom
+            <a href="https://cds.climate.copernicus.eu/profile" target="_blank" style="color:var(--accent)">CDS-Profil</a>.
+          </div>
+
+          <div class="tabs">
+            <div class="tab active" data-tab="cds-era5">ERA5 Reanalysis</div>
+            <div class="tab" data-tab="cds-cmip6">CMIP6 Projektionen</div>
+            <div class="tab" data-tab="cds-custom">Eigene Abfrage</div>
+          </div>
+
+          <div id="cds-era5" class="tab-content active">
+            <div class="form-grid">
+              <div class="form-group">
+                <label>Variable</label>
+                <select id="cds-variable">
+                  <option value="2m_temperature">Temperatur (2m)</option>
+                  <option value="total_precipitation">Niederschlag (gesamt)</option>
+                  <option value="10m_u_component_of_wind">Wind U (10m)</option>
+                  <option value="10m_v_component_of_wind">Wind V (10m)</option>
+                  <option value="surface_pressure">Oberflächendruck</option>
+                  <option value="sea_surface_temperature">Meeresoberflächentemp.</option>
+                  <option value="soil_temperature_level_1">Bodentemperatur (L1)</option>
+                  <option value="snow_depth">Schneehöhe</option>
+                  <option value="runoff">Abfluss</option>
+                  <option value="evaporation">Verdunstung</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Produkt-Typ</label>
+                <select id="cds-product">
+                  <option value="reanalysis">Reanalysis</option>
+                  <option value="ensemble_members">Ensemble Members</option>
+                  <option value="ensemble_mean">Ensemble Mean</option>
+                  <option value="ensemble_spread">Ensemble Spread</option>
+                  <option value="monthly_averaged_reanalysis">Monatsmittel</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Jahr</label>
+                <input type="text" id="cds-year" value="2024" placeholder="z.B. 2024 oder 2020/2024">
+                <span class="hint">Einzeln oder Bereich mit /</span>
+              </div>
+              <div class="form-group">
+                <label>Monate</label>
+                <input type="text" id="cds-months" value="01,02,03,04,05,06,07,08,09,10,11,12" placeholder="01,02,...,12">
+              </div>
+              <div class="form-group">
+                <label>Region (N/W/S/E)</label>
+                <input type="text" id="cds-area" value="55,5,47,16" placeholder="55,5,47,16 (Deutschland)">
+                <span class="hint">Nord, West, Süd, Ost</span>
+              </div>
+              <div class="form-group">
+                <label>Datenformat</label>
+                <select id="cds-format">
+                  <option value="netcdf">NetCDF</option>
+                  <option value="grib">GRIB</option>
+                </select>
+              </div>
+            </div>
+            <div class="btn-group">
+              <button class="btn btn-primary" onclick="queryCDS()">⚡ Abfrage starten</button>
+              <button class="btn btn-secondary" onclick="previewCDS()">👁 Request-Preview</button>
+              <button class="btn btn-secondary" onclick="copyCDSPython()">🐍 Python-Code kopieren</button>
+            </div>
+          </div>
+
+          <div id="cds-cmip6" class="tab-content">
+            <div style="margin-bottom:1rem">
+              <div class="tabs" id="cmip6-subtabs" style="border-bottom:1px solid var(--border-hl)">
+                <div class="tab active" data-cmip6tab="cmip6-global">CMIP6 Global</div>
+                <div class="tab" data-cmip6tab="cmip6-cordex">CORDEX Regional</div>
+                <div class="tab" data-cmip6tab="cmip6-atlas">IPCC AR6 Atlas</div>
+              </div>
+            </div>
+
+            <!-- ── CMIP6 Global ── -->
+            <div id="cmip6-global" class="cmip6-subtab active">
+              <div class="card-desc" style="margin-top:0">
+                Dataset: <code style="color:var(--green);font-family:var(--mono);font-size:0.78rem">projections-cmip6</code> ·
+                51 Variablen, 40+ Modelle, 9 Experimente · 1850–2100
+              </div>
+              <div class="form-grid">
+                <div class="form-group">
+                  <label>Experiment</label>
+                  <select id="cmip6-experiment">
+                    <option value="historical">Historical (1850–2014)</option>
+                    <optgroup label="SSP-Szenarien (2015–2100)">
+                      <option value="ssp1_1_9">SSP1-1.9 (sehr niedr. Emiss.)</option>
+                      <option value="ssp1_2_6">SSP1-2.6 (nachhaltig)</option>
+                      <option value="ssp2_4_5" selected>SSP2-4.5 (mittlerer Weg)</option>
+                      <option value="ssp3_7_0">SSP3-7.0 (regional rivalis.)</option>
+                      <option value="ssp5_8_5">SSP5-8.5 (fossile Entw.)</option>
+                    </optgroup>
+                    <optgroup label="Weitere">
+                      <option value="ssp4_3_4">SSP4-3.4</option>
+                      <option value="ssp4_6_0">SSP4-6.0</option>
+                      <option value="ssp5_3_4_over">SSP5-3.4-OS (Overshoot)</option>
+                    </optgroup>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>Temporale Auflösung</label>
+                  <select id="cmip6-temporal">
+                    <option value="monthly" selected>Monatlich</option>
+                    <option value="daily">Täglich</option>
+                    <option value="fixed">Fest (zeitunabhängig)</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>Level</label>
+                  <select id="cmip6-level">
+                    <option value="single_levels" selected>Single Levels (Oberfläche)</option>
+                    <option value="pressure_levels">Pressure Levels</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>Variable</label>
+                  <select id="cmip6-variable">
+                    <optgroup label="Temperatur">
+                      <option value="near_surface_air_temperature" selected>Temp. oberflächennah (tas)</option>
+                      <option value="daily_maximum_near_surface_air_temperature">Temp. max. (tasmax)</option>
+                      <option value="daily_minimum_near_surface_air_temperature">Temp. min. (tasmin)</option>
+                      <option value="surface_temperature">Oberflächentemperatur (ts)</option>
+                      <option value="sea_surface_temperature">Meeresoberfl.-Temp. (tos)</option>
+                    </optgroup>
+                    <optgroup label="Niederschlag & Wasser">
+                      <option value="precipitation">Niederschlag (pr)</option>
+                      <option value="snowfall_flux">Schneefall (prsn)</option>
+                      <option value="evaporation_including_sublimation_and_transpiration">Evapotranspiration (evspsbl)</option>
+                      <option value="moisture_in_upper_portion_of_soil_column">Bodenfeuchte (mrsos)</option>
+                      <option value="runoff">Abfluss (mrro)</option>
+                      <option value="snow_depth">Schneehöhe (snd)</option>
+                    </optgroup>
+                    <optgroup label="Wind & Druck">
+                      <option value="near_surface_wind_speed">Windgeschw. (sfcWind)</option>
+                      <option value="eastward_near_surface_wind">Wind ost (uas)</option>
+                      <option value="northward_near_surface_wind">Wind nord (vas)</option>
+                      <option value="sea_level_pressure">Luftdruck Meeresniv. (psl)</option>
+                      <option value="surface_air_pressure">Oberflächendruck (ps)</option>
+                    </optgroup>
+                    <optgroup label="Strahlung & Wolken">
+                      <option value="surface_downwelling_shortwave_radiation">SW-Strahlung ↓ (rsds)</option>
+                      <option value="surface_downwelling_longwave_radiation">LW-Strahlung ↓ (rlds)</option>
+                      <option value="toa_outgoing_shortwave_radiation">TOA SW ↑ (rsut)</option>
+                      <option value="total_cloud_cover">Bewölkung (clt)</option>
+                      <option value="near_surface_specific_humidity">Spez. Feuchte (huss)</option>
+                      <option value="near_surface_relative_humidity">Rel. Feuchte (hurs)</option>
+                    </optgroup>
+                    <optgroup label="Ozean & Eis">
+                      <option value="sea_ice_area_percentage_ocean">Meereisanteil (siconc)</option>
+                      <option value="sea_ice_thickness">Meereisdicke (sithick)</option>
+                      <option value="sea_surface_height_above_geoid">Meeresspiegel (zos)</option>
+                      <option value="ocean_heat_content_for_the_upper_700m">Ozeanwärme 0–700m (ohc700)</option>
+                    </optgroup>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>Modell</label>
+                  <select id="cmip6-model">
+                    <optgroup label="Empfohlen (niedr. Auflösung, schneller DL)">
+                      <option value="inm_cm4_8">INM-CM4-8</option>
+                      <option value="inm_cm5_0">INM-CM5-0</option>
+                      <option value="miroc6">MIROC6</option>
+                      <option value="noresm2_mm">NorESM2-MM</option>
+                    </optgroup>
+                    <optgroup label="Europa-relevant">
+                      <option value="mpi_esm1_2_lr" selected>MPI-ESM1-2-LR (DE)</option>
+                      <option value="mpi_esm1_2_hr">MPI-ESM1-2-HR (DE, hoch aufl.)</option>
+                      <option value="ec_earth3">EC-Earth3 (EU)</option>
+                      <option value="ec_earth3_veg">EC-Earth3-Veg (EU)</option>
+                      <option value="ec_earth3_veg_lr">EC-Earth3-Veg-LR (EU)</option>
+                      <option value="hadgem3_gc31_ll">HadGEM3-GC31-LL (UK)</option>
+                      <option value="hadgem3_gc31_mm">HadGEM3-GC31-MM (UK, hoch)</option>
+                      <option value="ipsl_cm6a_lr">IPSL-CM6A-LR (FR)</option>
+                      <option value="cnrm_cm6_1">CNRM-CM6-1 (FR)</option>
+                      <option value="cnrm_cm6_1_hr">CNRM-CM6-1-HR (FR, hoch)</option>
+                      <option value="cnrm_esm2_1">CNRM-ESM2-1 (FR)</option>
+                      <option value="cmcc_esm2">CMCC-ESM2 (IT)</option>
+                      <option value="cmcc_cm2_sr5">CMCC-CM2-SR5 (IT)</option>
+                    </optgroup>
+                    <optgroup label="Weitere globale Modelle">
+                      <option value="access_cm2">ACCESS-CM2 (AU)</option>
+                      <option value="access_esm1_5">ACCESS-ESM1-5 (AU)</option>
+                      <option value="bcc_csm2_mr">BCC-CSM2-MR (CN)</option>
+                      <option value="canesm5">CanESM5 (CA)</option>
+                      <option value="cesm2">CESM2 (US)</option>
+                      <option value="cesm2_waccm">CESM2-WACCM (US)</option>
+                      <option value="gfdl_esm4">GFDL-ESM4 (US)</option>
+                      <option value="giss_e2_1_g">GISS-E2-1-G (US/NASA)</option>
+                      <option value="kace_1_0_g">KACE-1.0-G (KR)</option>
+                      <option value="nesm3">NESM3 (CN)</option>
+                      <option value="ukesm1_0_ll">UKESM1.0-LL (UK)</option>
+                      <option value="fgoals_g3">FGOALS-g3 (CN)</option>
+                      <option value="mcm_ua_1_0">MCM-UA-1-0 (US)</option>
+                      <option value="miroc_es2l">MIROC-ES2L (JP)</option>
+                      <option value="mri_esm2_0">MRI-ESM2-0 (JP)</option>
+                      <option value="taiesm1">TaiESM1 (TW)</option>
+                    </optgroup>
+                  </select>
+                  <span class="hint">40+ Modelle verfügbar · nicht jede Kombination ist vorhanden</span>
+                </div>
+                <div class="form-group">
+                  <label>Zeitraum (Start–Ende)</label>
+                  <select id="cmip6-date-range">
+                    <option value="2015-01-01/2040-12-31">2015–2040 (nahe Zukunft)</option>
+                    <option value="2015-01-01/2060-12-31">2015–2060 (mittlere Zukunft)</option>
+                    <option value="2015-01-01/2100-12-31" selected>2015–2100 (gesamte Projektion)</option>
+                    <option value="2041-01-01/2070-12-31">2041–2070 (Mitte Jhdt.)</option>
+                    <option value="2071-01-01/2100-12-31">2071–2100 (Ende Jhdt.)</option>
+                    <option value="1850-01-01/2014-12-31">1850–2014 (nur Historical)</option>
+                    <option value="custom">Benutzerdefiniert</option>
+                  </select>
+                </div>
+                <div class="form-group" id="cmip6-custom-date-group" style="display:none">
+                  <label>Benutzerdefinierter Zeitraum</label>
+                  <input type="text" id="cmip6-custom-date" placeholder="YYYY-MM-DD/YYYY-MM-DD" value="2030-01-01/2060-12-31">
+                </div>
+                <div class="form-group">
+                  <label>Region (N/W/S/E)</label>
+                  <input type="text" id="cmip6-area" value="55,5,47,16" placeholder="55,5,47,16 (Deutschland)">
+                  <span class="hint">Leer = global</span>
+                </div>
+                <div class="form-group">
+                  <label>Datenformat</label>
+                  <select id="cmip6-format">
+                    <option value="netcdf_legacy">NetCDF (legacy)</option>
+                    <option value="netcdf">NetCDF4</option>
+                    <option value="zip" selected>ZIP (enthält NetCDF)</option>
+                  </select>
+                </div>
+              </div>
+              <div class="btn-group">
+                <button class="btn btn-primary" onclick="queryCMIP6()">⚡ Projektion abrufen</button>
+                <button class="btn btn-secondary" onclick="previewCMIP6()">👁 Request-Preview</button>
+                <button class="btn btn-secondary" onclick="copyCMIP6Python()">🐍 Python-Code kopieren</button>
+              </div>
+            </div>
+
+            <!-- ── CORDEX Regional ── -->
+            <div id="cmip6-cordex" class="cmip6-subtab" style="display:none">
+              <div class="card-desc" style="margin-top:0">
+                Dataset: <code style="color:var(--green);font-family:var(--mono);font-size:0.78rem">projections-cordex-domains-single-levels</code> ·
+                Regionale Downscaling-Projektionen · höhere Auflösung als CMIP6 global
+              </div>
+              <div class="form-grid">
+                <div class="form-group">
+                  <label>Domain</label>
+                  <select id="cordex-domain">
+                    <option value="europe" selected>Europa (EUR-11 / EUR-22)</option>
+                    <option value="africa">Afrika</option>
+                    <option value="south_america">Südamerika</option>
+                    <option value="north_america">Nordamerika</option>
+                    <option value="east_asia">Ostasien</option>
+                    <option value="arctic">Arktis</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>Experiment</label>
+                  <select id="cordex-experiment">
+                    <option value="historical">Historical</option>
+                    <option value="rcp_2_6">RCP 2.6</option>
+                    <option value="rcp_4_5" selected>RCP 4.5</option>
+                    <option value="rcp_8_5">RCP 8.5</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>Variable</label>
+                  <select id="cordex-variable">
+                    <option value="mean_air_temperature">Temp. Mittel (tas)</option>
+                    <option value="maximum_air_temperature">Temp. Max (tasmax)</option>
+                    <option value="minimum_air_temperature">Temp. Min (tasmin)</option>
+                    <option value="mean_precipitation_flux">Niederschlag (pr)</option>
+                    <option value="10m_wind_speed">Windgeschw. 10m</option>
+                    <option value="surface_solar_radiation_downwards">Solarstrahlung</option>
+                    <option value="mean_sea_level_pressure">Luftdruck</option>
+                    <option value="near_surface_specific_humidity">Spez. Feuchte</option>
+                    <option value="mean_evapotranspiration_flux">Evapotranspiration</option>
+                    <option value="surface_thermal_radiation_downwards">Therm. Strahlung</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>Temporale Auflösung</label>
+                  <select id="cordex-temporal">
+                    <option value="monthly_mean">Monatsmittel</option>
+                    <option value="daily_mean">Tagesmittel</option>
+                    <option value="seasonal_mean">Saisonmittel</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>Startjahr</label>
+                  <input type="number" id="cordex-start-year" value="2030" min="1950" max="2100">
+                </div>
+                <div class="form-group">
+                  <label>Endjahr</label>
+                  <input type="number" id="cordex-end-year" value="2100" min="1950" max="2100">
+                </div>
+              </div>
+              <div class="btn-group">
+                <button class="btn btn-primary" onclick="queryCORDEX()">⚡ CORDEX abrufen</button>
+                <button class="btn btn-secondary" onclick="previewCORDEX()">👁 Preview</button>
+                <button class="btn btn-secondary" onclick="copyCORDEXPython()">🐍 Python-Code</button>
+              </div>
+            </div>
+
+            <!-- ── IPCC AR6 Atlas ── -->
+            <div id="cmip6-atlas" class="cmip6-subtab" style="display:none">
+              <div class="card-desc" style="margin-top:0">
+                Dataset: <code style="color:var(--green);font-family:var(--mono);font-size:0.78rem">projections-climate-atlas</code> ·
+                IPCC AR6 Atlas Datensatz · 22 Variablen/Indizes · CMIP5 + CMIP6 + CORDEX
+              </div>
+              <div class="form-grid">
+                <div class="form-group">
+                  <label>Datenquelle</label>
+                  <select id="atlas-origin">
+                    <option value="cmip6" selected>CMIP6</option>
+                    <option value="cmip5">CMIP5</option>
+                    <option value="cordex">CORDEX</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>Experiment</label>
+                  <select id="atlas-experiment">
+                    <option value="historical">Historical</option>
+                    <option value="ssp1_2_6">SSP1-2.6</option>
+                    <option value="ssp2_4_5" selected>SSP2-4.5</option>
+                    <option value="ssp3_7_0">SSP3-7.0</option>
+                    <option value="ssp5_8_5">SSP5-8.5</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>Variable / Index</label>
+                  <select id="atlas-variable">
+                    <optgroup label="Temperatur">
+                      <option value="monthly_mean_of_daily_mean_temperature">Monatl. Temp. Mittel</option>
+                      <option value="monthly_mean_of_daily_maximum_temperature">Monatl. Temp. Max</option>
+                      <option value="monthly_mean_of_daily_minimum_temperature">Monatl. Temp. Min</option>
+                    </optgroup>
+                    <optgroup label="Niederschlag">
+                      <option value="monthly_cumulative_precipitation">Monatl. Niederschlag</option>
+                    </optgroup>
+                    <optgroup label="Klimaindizes (Hitze/Kälte)">
+                      <option value="number_of_frost_days">Frosttage</option>
+                      <option value="number_of_summer_days">Sommertage</option>
+                      <option value="tropical_nights">Tropennächte</option>
+                    </optgroup>
+                    <optgroup label="Klimaindizes (Feucht/Trocken)">
+                      <option value="consecutive_dry_days">Max. Trockentage</option>
+                      <option value="maximum_5_day_cumulative_precipitation">Max. 5-Tage Niederschl.</option>
+                    </optgroup>
+                    <optgroup label="Schnee & Eis">
+                      <option value="snowfall">Schneefall</option>
+                    </optgroup>
+                    <optgroup label="Wind">
+                      <option value="near_surface_wind_speed">Windgeschwindigkeit</option>
+                    </optgroup>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>Zeitraum</label>
+                  <select id="atlas-period">
+                    <option value="2021_2040">2021–2040</option>
+                    <option value="2041_2060" selected>2041–2060</option>
+                    <option value="2061_2080">2061–2080</option>
+                    <option value="2081_2100">2081–2100</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>Region (N/W/S/E)</label>
+                  <input type="text" id="atlas-area" value="55,5,47,16">
+                </div>
+              </div>
+              <div class="btn-group">
+                <button class="btn btn-primary" onclick="queryAtlas()">⚡ Atlas abrufen</button>
+                <button class="btn btn-secondary" onclick="previewAtlas()">👁 Preview</button>
+                <button class="btn btn-secondary" onclick="copyAtlasPython()">🐍 Python-Code</button>
+              </div>
+            </div>
+
+            <!-- CMIP6 Results (shared) -->
+            <div class="card" id="cmip6-results-inner" style="margin-top:1rem;display:none;background:var(--bg);border-color:var(--border)">
+              <div class="card-title" style="font-size:0.95rem">📊 Projektions-Ergebnis</div>
+              <div class="progress-bar"><div class="progress-fill" id="cmip6-progress"></div></div>
+              <div class="output-area" id="cmip6-log"></div>
+              <div class="export-bar" id="cmip6-export" style="display:none">
+                <span>Daten bereit</span>
+                <button class="btn btn-small btn-secondary" onclick="exportJSON('cmip6')">JSON</button>
+                <button class="btn btn-small btn-secondary" onclick="copyToClipboard('cmip6')">📋 Kopieren</button>
+              </div>
+            </div>
+          </div>
+
+          <div id="cds-custom" class="tab-content">
+            <div class="form-group">
+              <label>Dataset-ID</label>
+              <input type="text" id="cds-custom-dataset" placeholder="z.B. reanalysis-era5-single-levels">
+            </div>
+            <div class="form-group" style="margin-top:0.8rem">
+              <label>Request-Body (JSON)</label>
+              <textarea id="cds-custom-json" rows="10" placeholder='{"product_type": ["reanalysis"], "variable": ["2m_temperature"], ...}'></textarea>
+            </div>
+            <div class="btn-group">
+              <button class="btn btn-primary" onclick="queryCustomCDS()">⚡ Absenden</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" id="cds-results-card" style="display:none">
+          <div class="card-title">📊 Ergebnis</div>
+          <div class="progress-bar"><div class="progress-fill" id="cds-progress"></div></div>
+          <div class="output-area" id="cds-log"></div>
+          <div class="export-bar" id="cds-export" style="display:none">
+            <span>Daten bereit</span>
+            <button class="btn btn-small btn-secondary" onclick="exportJSON('cds')">JSON</button>
+            <button class="btn btn-small btn-secondary" onclick="exportCSV('cds')">CSV</button>
+            <button class="btn btn-small btn-secondary" onclick="copyToClipboard('cds')">📋 Kopieren</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══════════════════════════════════
+           PANEL: ADS (CAMS)
+           ══════════════════════════════════ -->
+      <div class="panel" id="panel-ads">
+        <div class="card">
+          <div class="card-title">🌫️ Atmosphere Data Store · CAMS</div>
+          <div class="card-desc">
+            Copernicus Atmosphere Monitoring Service — Luftqualitätsdaten, Treibhausgase, Aerosole.
+            Nutzt denselben PAT wie CDS.
+          </div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Dataset</label>
+              <select id="ads-dataset">
+                <option value="cams-global-ghg-reanalysis-egg4-monthly">GHG Reanalysis (monatl.)</option>
+                <option value="cams-global-reanalysis-eac4">EAC4 Global Reanalysis</option>
+                <option value="cams-europe-air-quality-forecasts">EU Luftqualitäts-Prognose</option>
+                <option value="cams-global-radiative-forcings">Radiative Forcings</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Variable</label>
+              <select id="ads-variable">
+                <option value="carbon_dioxide">CO₂</option>
+                <option value="methane">Methan (CH₄)</option>
+                <option value="nitrogen_dioxide">NO₂</option>
+                <option value="ozone">Ozon (O₃)</option>
+                <option value="particulate_matter_2.5um">PM2.5</option>
+                <option value="particulate_matter_10um">PM10</option>
+                <option value="sulphur_dioxide">SO₂</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Jahr</label>
+              <input type="text" id="ads-year" value="2024">
+            </div>
+            <div class="form-group">
+              <label>Monate</label>
+              <input type="text" id="ads-months" value="01,06,12">
+            </div>
+            <div class="form-group">
+              <label>Region (N/W/S/E)</label>
+              <input type="text" id="ads-area" value="55,5,47,16">
+            </div>
+          </div>
+          <div class="btn-group">
+            <button class="btn btn-primary" onclick="queryADS()">⚡ Abfrage starten</button>
+            <button class="btn btn-secondary" onclick="previewADS()">👁 Preview</button>
+          </div>
+        </div>
+        <div class="card" id="ads-results-card" style="display:none">
+          <div class="card-title">📊 Ergebnis</div>
+          <div class="progress-bar"><div class="progress-fill" id="ads-progress"></div></div>
+          <div class="output-area" id="ads-log"></div>
+          <div class="export-bar" id="ads-export" style="display:none">
+            <span>Daten bereit</span>
+            <button class="btn btn-small btn-secondary" onclick="exportJSON('ads')">JSON</button>
+            <button class="btn btn-small btn-secondary" onclick="exportCSV('ads')">CSV</button>
+            <button class="btn btn-small btn-secondary" onclick="copyToClipboard('ads')">📋 Kopieren</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══════════════════════════════════
+           PANEL: MARINE
+           ══════════════════════════════════ -->
+      <div class="panel" id="panel-marine">
+        <div class="card">
+          <div class="card-title">🌊 Copernicus Marine Service (CMEMS)</div>
+          <div class="card-desc">
+            Ozeanographische Daten: Meeresspiegel, Wassertemperatur, Strömungen, Salinität.
+            API-Zugang über <a href="https://data.marine.copernicus.eu" target="_blank" style="color:var(--accent)">marine.copernicus.eu</a>.
+          </div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Produkt-ID</label>
+              <select id="marine-product">
+                <option value="cmems_mod_glo_phy_my_0.083deg_P1D-m">Global Ocean Physics (daily)</option>
+                <option value="cmems_mod_glo_phy_my_0.083deg_P1M-m">Global Ocean Physics (monthly)</option>
+                <option value="cmems_obs-sl_glo_phy-ssh_my_allsat-l4-duacs-0.25deg_P1D">Sea Level (L4)</option>
+                <option value="cmems_mod_bal_phy_my_P1D-m">Baltic Sea Physics (daily)</option>
+                <option value="cmems_mod_nws_phy-sst_my_L4_P1D-m">NW Shelf SST (daily)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Variable</label>
+              <select id="marine-variable">
+                <option value="thetao">Wassertemperatur</option>
+                <option value="so">Salinität</option>
+                <option value="zos">Meeresspiegel (SSH)</option>
+                <option value="uo">Strömung U</option>
+                <option value="vo">Strömung V</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Min. Longitude</label>
+              <input type="number" id="marine-lon-min" value="5" step="0.5">
+            </div>
+            <div class="form-group">
+              <label>Max. Longitude</label>
+              <input type="number" id="marine-lon-max" value="16" step="0.5">
+            </div>
+            <div class="form-group">
+              <label>Min. Latitude</label>
+              <input type="number" id="marine-lat-min" value="47" step="0.5">
+            </div>
+            <div class="form-group">
+              <label>Max. Latitude</label>
+              <input type="number" id="marine-lat-max" value="55" step="0.5">
+            </div>
+            <div class="form-group">
+              <label>Startdatum</label>
+              <input type="date" id="marine-start" value="2024-01-01">
+            </div>
+            <div class="form-group">
+              <label>Enddatum</label>
+              <input type="date" id="marine-end" value="2024-12-31">
+            </div>
+          </div>
+          <div class="btn-group">
+            <button class="btn btn-primary" onclick="queryMarine()">⚡ Abfrage starten</button>
+            <button class="btn btn-secondary" onclick="previewMarine()">👁 Preview</button>
+          </div>
+        </div>
+        <div class="card" id="marine-results-card" style="display:none">
+          <div class="card-title">📊 Ergebnis</div>
+          <div class="output-area" id="marine-log"></div>
+          <div class="export-bar" id="marine-export" style="display:none">
+            <span>Daten bereit</span>
+            <button class="btn btn-small btn-secondary" onclick="exportJSON('marine')">JSON</button>
+            <button class="btn btn-small btn-secondary" onclick="copyToClipboard('marine')">📋 Kopieren</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══════════════════════════════════
+           PANEL: LAND MONITORING
+           ══════════════════════════════════ -->
+      <div class="panel" id="panel-land">
+        <div class="card">
+          <div class="card-title">🛰️ Copernicus Land Monitoring (CLMS)</div>
+          <div class="card-desc">
+            Landbedeckung, Vegetation, Bodenversiegelung, Urban Atlas über den
+            <a href="https://land.copernicus.eu/en" target="_blank" style="color:var(--accent)">CLMS-Katalog</a> und WMS/WCS.
+          </div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Datensatz</label>
+              <select id="land-dataset">
+                <option value="corine-land-cover">CORINE Land Cover</option>
+                <option value="imperviousness-density">Bodenversiegelung</option>
+                <option value="tree-cover-density">Baumkronenbedeckung</option>
+                <option value="water-wetness">Wasser & Feuchtgebiete</option>
+                <option value="small-woody-features">Kleine Gehölzstrukturen</option>
+                <option value="urban-atlas">Urban Atlas</option>
+                <option value="eu-dem">EU-DEM (Höhenmodell)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>WMS/WCS Endpoint</label>
+              <input type="text" id="land-endpoint" placeholder="https://image.discomap.eea.europa.eu/arcgis/services/..." value="">
+              <span class="hint">Benutzerdefinierter WMS/WCS-Endpoint</span>
+            </div>
+            <div class="form-group">
+              <label>Region (BBOX)</label>
+              <input type="text" id="land-bbox" value="5,47,16,55" placeholder="MinX,MinY,MaxX,MaxY">
+            </div>
+            <div class="form-group">
+              <label>Referenzjahr</label>
+              <select id="land-year">
+                <option value="2018">2018</option>
+                <option value="2012">2012</option>
+                <option value="2006">2006</option>
+              </select>
+            </div>
+          </div>
+          <div class="btn-group">
+            <button class="btn btn-primary" onclick="queryLand()">⚡ Katalog abfragen</button>
+            <button class="btn btn-secondary" onclick="previewLand()">👁 Preview</button>
+          </div>
+        </div>
+        <div class="card" id="land-results-card" style="display:none">
+          <div class="card-title">📊 Ergebnis</div>
+          <div class="output-area" id="land-log"></div>
+        </div>
+      </div>
+
+      <!-- ══════════════════════════════════
+           PANEL: DWD / BRIGHT SKY
+           ══════════════════════════════════ -->
+      <div class="panel" id="panel-dwd">
+        <div class="card">
+          <div class="card-title">⛅ Deutscher Wetterdienst (DWD) via Bright Sky</div>
+          <div class="card-desc">
+            Kostenloser JSON-API-Zugang zu DWD-Wetterdaten. Kein API-Key erforderlich.
+            Dokumentation: <a href="https://brightsky.dev/docs/" target="_blank" style="color:var(--accent)">brightsky.dev/docs</a>
+          </div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Endpunkt</label>
+              <select id="dwd-endpoint">
+                <option value="weather">Wetter (historisch & aktuell)</option>
+                <option value="current_weather">Aktuelles Wetter</option>
+                <option value="radar">Regenradar</option>
+                <option value="alerts">Wetterwarnungen</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Breitengrad</label>
+              <input type="number" id="dwd-lat" value="50.11" step="0.01">
+              <span class="hint">z.B. 50.11 (Frankfurt)</span>
+            </div>
+            <div class="form-group">
+              <label>Längengrad</label>
+              <input type="number" id="dwd-lon" value="8.68" step="0.01">
+              <span class="hint">z.B. 8.68 (Frankfurt)</span>
+            </div>
+            <div class="form-group">
+              <label>Startdatum</label>
+              <input type="date" id="dwd-date" value="2024-01-01">
+            </div>
+            <div class="form-group">
+              <label>Enddatum</label>
+              <input type="date" id="dwd-date-end" value="2024-01-07">
+            </div>
+          </div>
+          <div class="btn-group">
+            <button class="btn btn-primary" onclick="queryDWD()">⚡ Abfrage starten</button>
+            <button class="btn btn-secondary" onclick="previewDWD()">👁 Preview URL</button>
+          </div>
+        </div>
+        <div class="card" id="dwd-results-card" style="display:none">
+          <div class="card-title">📊 Ergebnis</div>
+          <div class="output-area" id="dwd-log"></div>
+          <div class="data-table-wrap" id="dwd-table-wrap" style="display:none">
+            <table class="data-table" id="dwd-table"></table>
+          </div>
+          <div class="export-bar" id="dwd-export" style="display:none">
+            <span>Daten bereit</span>
+            <button class="btn btn-small btn-secondary" onclick="exportJSON('dwd')">JSON</button>
+            <button class="btn btn-small btn-secondary" onclick="exportCSV('dwd')">CSV</button>
+            <button class="btn btn-small btn-secondary" onclick="copyToClipboard('dwd')">📋 Kopieren</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══════════════════════════════════
+           PANEL: OSM / Overpass
+           ══════════════════════════════════ -->
+      <div class="panel" id="panel-osm">
+        <div class="card">
+          <div class="card-title">🗺️ OpenStreetMap / Overpass API</div>
+          <div class="card-desc">
+            Geodaten-Abfragen: Infrastruktur, Flüsse, Schutzgebiete, Gebäude.
+            Kein API-Key erforderlich.
+          </div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Vordefinierte Abfrage</label>
+              <select id="osm-preset" onchange="loadOSMPreset()">
+                <option value="">— Eigene Overpass-Abfrage —</option>
+                <option value="floodplain">Überschwemmungsgebiete (natural=floodplain)</option>
+                <option value="rivers">Flüsse & Wasserläufe</option>
+                <option value="protected">Naturschutzgebiete</option>
+                <option value="industrial">Industriegebiete</option>
+                <option value="hospitals">Krankenhäuser</option>
+                <option value="powerlines">Stromtrassen</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Region (BBOX: S,W,N,E)</label>
+              <input type="text" id="osm-bbox" value="49.5,7.5,51.0,10.0" placeholder="Süd,West,Nord,Ost">
+            </div>
+          </div>
+          <div class="form-group" style="margin-top:0.8rem">
+            <label>Overpass QL Query</label>
+            <textarea id="osm-query" rows="6">[out:json][timeout:60];
+(
+  node["natural"="floodplain"]({{bbox}});
+  way["natural"="floodplain"]({{bbox}});
+  relation["natural"="floodplain"]({{bbox}});
+);
+out body;
+>;
+out skel qt;</textarea>
+          </div>
+          <div class="btn-group">
+            <button class="btn btn-primary" onclick="queryOSM()">⚡ Abfrage starten</button>
+            <button class="btn btn-secondary btn-small" onclick="window.open('https://overpass-turbo.eu/','_blank')">🌐 Overpass Turbo</button>
+          </div>
+        </div>
+        <div class="card" id="osm-results-card" style="display:none">
+          <div class="card-title">📊 Ergebnis</div>
+          <div class="output-area" id="osm-log"></div>
+          <div class="export-bar" id="osm-export" style="display:none">
+            <span>Daten bereit</span>
+            <button class="btn btn-small btn-secondary" onclick="exportJSON('osm')">JSON</button>
+            <button class="btn btn-small btn-secondary" onclick="exportCSV('osm')">CSV</button>
+            <button class="btn btn-small btn-secondary" onclick="copyToClipboard('osm')">📋 Kopieren</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══════════════════════════════════
+           PANEL: EU Open Data
+           ══════════════════════════════════ -->
+      <div class="panel" id="panel-eudata">
+        <div class="card">
+          <div class="card-title">🇪🇺 EU Open Data Portal</div>
+          <div class="card-desc">
+            Zugang zum offiziellen Datenportal der Europäischen Union:
+            <a href="https://data.europa.eu" target="_blank" style="color:var(--accent)">data.europa.eu</a>.
+            SPARQL und REST-Suche. Kein API-Key für Katalogsuche nötig.
+          </div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Suchmodus</label>
+              <select id="eu-mode">
+                <option value="search">Katalog-Suche (REST)</option>
+                <option value="sparql">SPARQL-Abfrage</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Suchbegriff</label>
+              <input type="text" id="eu-query" value="climate risk flood" placeholder="z.B. climate risk flood">
+            </div>
+            <div class="form-group">
+              <label>Max. Ergebnisse</label>
+              <input type="number" id="eu-limit" value="20" min="1" max="100">
+            </div>
+          </div>
+          <div class="form-group" id="eu-sparql-group" style="display:none;margin-top:0.8rem">
+            <label>SPARQL Query</label>
+            <textarea id="eu-sparql" rows="8">PREFIX dcat: <http://www.w3.org/ns/dcat#>
+PREFIX dct: <http://purl.org/dc/terms/>
+SELECT ?dataset ?title WHERE {
+  ?dataset a dcat:Dataset ;
+           dct:title ?title .
+  FILTER(CONTAINS(LCASE(?title), "climate"))
+} LIMIT 20</textarea>
+          </div>
+          <div class="btn-group">
+            <button class="btn btn-primary" onclick="queryEU()">⚡ Suche starten</button>
+          </div>
+        </div>
+        <div class="card" id="eudata-results-card" style="display:none">
+          <div class="card-title">📊 Ergebnis</div>
+          <div class="output-area" id="eudata-log"></div>
+          <div class="data-table-wrap" id="eudata-table-wrap" style="display:none">
+            <table class="data-table" id="eudata-table"></table>
+          </div>
+          <div class="export-bar" id="eudata-export" style="display:none">
+            <span>Daten bereit</span>
+            <button class="btn btn-small btn-secondary" onclick="exportJSON('eudata')">JSON</button>
+            <button class="btn btn-small btn-secondary" onclick="copyToClipboard('eudata')">📋 Kopieren</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══════════════════════════════════
+           PANEL: BATCH
+           ══════════════════════════════════ -->
+      <div class="panel" id="panel-batch">
+        <div class="card">
+          <div class="card-title">📦 Batch-Abfrage</div>
+          <div class="card-desc">
+            Mehrere Datenquellen gleichzeitig abfragen. Ideal für umfassende Klimarisikoanalysen.
+          </div>
+          <div class="form-group">
+            <label>Region (BBOX: N,W,S,E)</label>
+            <input type="text" id="batch-area" value="55,5,47,16" placeholder="55,5,47,16">
+          </div>
+          <div class="form-group" style="margin-top:0.8rem">
+            <label>Quellen auswählen</label>
+            <div class="checkbox-group" id="batch-sources">
+              <label class="checkbox-item selected"><input type="checkbox" value="dwd" checked> ⛅ DWD</label>
+              <label class="checkbox-item selected"><input type="checkbox" value="osm" checked> 🗺️ OSM</label>
+              <label class="checkbox-item"><input type="checkbox" value="cds"> 🌡️ CDS</label>
+              <label class="checkbox-item"><input type="checkbox" value="ads"> 🌫️ ADS</label>
+              <label class="checkbox-item"><input type="checkbox" value="eudata"> 🇪🇺 EU Data</label>
+            </div>
+          </div>
+          <div class="btn-group">
+            <button class="btn btn-primary" onclick="runBatch()">⚡ Batch starten</button>
+          </div>
+        </div>
+        <div class="card" id="batch-results-card" style="display:none">
+          <div class="card-title">📊 Batch-Ergebnis</div>
+          <div class="progress-bar"><div class="progress-fill" id="batch-progress"></div></div>
+          <div class="output-area" id="batch-log"></div>
+        </div>
+      </div>
+
+      <!-- ══════════════════════════════════
+           PANEL: HISTORY
+           ══════════════════════════════════ -->
+      <div class="panel" id="panel-history">
+        <div class="card">
+          <div class="card-title">📋 Abfrage-Historie</div>
+          <div class="card-desc">Letzte API-Abfragen (lokal gespeichert, max. 50).</div>
+          <div id="history-list">
+            <div class="empty-state">
+              <div class="icon">📋</div>
+              <p>Noch keine Abfragen durchgeführt. Starte eine Datenabfrage, um die Historie zu füllen.</p>
+            </div>
+          </div>
+          <div class="btn-group">
+            <button class="btn btn-secondary btn-small" onclick="clearHistory()">🗑 Historie löschen</button>
+            <button class="btn btn-secondary btn-small" onclick="exportHistory()">💾 Als JSON exportieren</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══════════════════════════════════
+           PANEL: DOCS
+           ══════════════════════════════════ -->
+      <div class="panel" id="panel-docs">
+        <div class="card">
+          <div class="card-title">📖 API-Dokumentation & Referenz</div>
+          <div class="card-desc" style="line-height:2">
+            <strong style="color:var(--accent)">Copernicus CDS / ADS</strong><br>
+            Basis-URL: <code style="color:var(--green);font-family:var(--mono);font-size:0.8rem">https://cds.climate.copernicus.eu/api</code><br>
+            ADS-URL: <code style="color:var(--green);font-family:var(--mono);font-size:0.8rem">https://ads.atmosphere.copernicus.eu/api</code><br>
+            REST-Retrieve: <code style="color:var(--amber);font-family:var(--mono);font-size:0.8rem">POST /retrieve/v1/processes/{dataset}/execute/</code><br>
+            Job-Status: <code style="color:var(--amber);font-family:var(--mono);font-size:0.8rem">GET /retrieve/v1/jobs/{jobId}</code><br>
+            Auth: Header <code style="font-family:var(--mono);font-size:0.8rem">PRIVATE-TOKEN: {PAT}</code><br>
+            Doku: <a href="https://cds.climate.copernicus.eu/how-to-api" target="_blank" style="color:var(--accent)">cds.climate.copernicus.eu/how-to-api</a>
+            <br><br>
+            <strong style="color:var(--accent)">Klimaprojektionen (3 Datasets)</strong><br>
+            <code style="color:var(--green);font-family:var(--mono);font-size:0.8rem">projections-cmip6</code> — CMIP6 global · 51 Variablen · 40+ Modelle · 1850–2100<br>
+            <a href="https://cds.climate.copernicus.eu/datasets/projections-cmip6" target="_blank" style="color:var(--accent)">→ CDS Dataset-Seite</a> ·
+            <a href="https://confluence.ecmwf.int/display/CKB/CMIP6:+Global+climate+projections" target="_blank" style="color:var(--accent)">→ Doku (ECMWF)</a><br>
+            <code style="color:var(--green);font-family:var(--mono);font-size:0.8rem">projections-cordex-domains-single-levels</code> — CORDEX regional · höhere Auflösung<br>
+            <code style="color:var(--green);font-family:var(--mono);font-size:0.8rem">projections-climate-atlas</code> — IPCC AR6 Atlas · CMIP5/6 + CORDEX · 22 Indizes<br>
+            <a href="https://cds.climate.copernicus.eu/datasets/projections-climate-atlas" target="_blank" style="color:var(--accent)">→ Atlas Dataset-Seite</a>
+            <br>
+            SSP-Szenarien: SSP1-1.9, SSP1-2.6, SSP2-4.5, SSP3-7.0, SSP4-3.4, SSP4-6.0, SSP5-3.4-OS, SSP5-8.5
+            <br><br>
+            <strong style="color:var(--accent)">Copernicus Marine (CMEMS)</strong><br>
+            Doku: <a href="https://data.marine.copernicus.eu" target="_blank" style="color:var(--accent)">data.marine.copernicus.eu</a>
+            <br><br>
+            <strong style="color:var(--accent)">DWD / Bright Sky</strong><br>
+            Basis-URL: <code style="color:var(--green);font-family:var(--mono);font-size:0.8rem">https://api.brightsky.dev</code><br>
+            Endpunkte: <code style="font-family:var(--mono);font-size:0.8rem">/weather</code>, <code style="font-family:var(--mono);font-size:0.8rem">/current_weather</code>, <code style="font-family:var(--mono);font-size:0.8rem">/radar</code>, <code style="font-family:var(--mono);font-size:0.8rem">/alerts</code><br>
+            Doku: <a href="https://brightsky.dev/docs/" target="_blank" style="color:var(--accent)">brightsky.dev/docs</a>
+            <br><br>
+            <strong style="color:var(--accent)">OpenStreetMap / Overpass</strong><br>
+            Basis-URL: <code style="color:var(--green);font-family:var(--mono);font-size:0.8rem">https://overpass-api.de/api/interpreter</code><br>
+            Doku: <a href="https://wiki.openstreetmap.org/wiki/Overpass_API" target="_blank" style="color:var(--accent)">wiki.openstreetmap.org/wiki/Overpass_API</a>
+            <br><br>
+            <strong style="color:var(--accent)">EU Open Data Portal</strong><br>
+            Suche: <code style="color:var(--green);font-family:var(--mono);font-size:0.8rem">https://data.europa.eu/api/hub/search/datasets</code><br>
+            SPARQL: <code style="color:var(--green);font-family:var(--mono);font-size:0.8rem">https://data.europa.eu/sparql</code><br>
+            Doku: <a href="https://data.europa.eu/en" target="_blank" style="color:var(--accent)">data.europa.eu</a>
+            <br><br>
+            <strong style="color:var(--accent)">UBA (Umweltbundesamt)</strong><br>
+            Daten: <a href="https://www.umweltbundesamt.de/daten" target="_blank" style="color:var(--accent)">umweltbundesamt.de/daten</a><br>
+            <span style="color:var(--text-3)">Kein offizieller REST-API-Endpunkt — Datenexport über CSV/Excel auf den Themen-Seiten.</span>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /main-content -->
+  </div><!-- /main -->
+</div><!-- /app -->
+
+<script>
+/* ═══════════════════════════════════════════════════════
+   STATE
+   ═══════════════════════════════════════════════════════ */
+const state = {
+  results: {},
+  history: JSON.parse(localStorage.getItem('crh_history') || '[]'),
+};
+
+/* ═══════════════════════════════════════════════════════
+   NAVIGATION
+   ═══════════════════════════════════════════════════════ */
+document.querySelectorAll('.nav-item[data-panel]').forEach(item => {
+  item.addEventListener('click', () => {
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    item.classList.add('active');
+    const id = item.dataset.panel;
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    document.getElementById('panel-' + id).classList.add('active');
+    document.getElementById('breadcrumb').innerHTML =
+      'Datenquellen › <strong>' + item.textContent.trim().split('\n')[0].trim() + '</strong>';
+  });
+});
+
+/* Tabs inside panels */
+document.querySelectorAll('.tabs .tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    const parent = tab.closest('.card');
+    parent.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    parent.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById(tab.dataset.tab).classList.add('active');
+  });
+});
+
+/* Checkbox items */
+document.querySelectorAll('.checkbox-item').forEach(item => {
+  item.addEventListener('click', () => item.classList.toggle('selected'));
+});
+
+/* EU mode toggle */
+document.getElementById('eu-mode').addEventListener('change', e => {
+  document.getElementById('eu-sparql-group').style.display =
+    e.target.value === 'sparql' ? 'block' : 'none';
+});
+
+/* ═══════════════════════════════════════════════════════
+   API KEY MANAGEMENT (localStorage only)
+   ═══════════════════════════════════════════════════════ */
+function saveKeys() {
+  const keys = {
+    cds: document.getElementById('keyCDS').value.trim(),
+    marine: document.getElementById('keyMarine').value.trim(),
+    eu: document.getElementById('keyEU').value.trim(),
+  };
+  localStorage.setItem('crh_keys', JSON.stringify(keys));
+  document.getElementById('keyStatus').textContent = '✓ Schlüssel lokal gespeichert';
+  updateStatusPills();
+}
+function loadKeys() {
+  try {
+    const keys = JSON.parse(localStorage.getItem('crh_keys') || '{}');
+    if (keys.cds) document.getElementById('keyCDS').value = keys.cds;
+    if (keys.marine) document.getElementById('keyMarine').value = keys.marine;
+    if (keys.eu) document.getElementById('keyEU').value = keys.eu;
+  } catch(e) {}
+}
+function getKey(name) {
+  try { return JSON.parse(localStorage.getItem('crh_keys') || '{}')[name] || ''; }
+  catch(e) { return ''; }
+}
+function updateStatusPills() {
+  const pills = document.getElementById('statusPills');
+  const cdsKey = getKey('cds');
+  pills.innerHTML = `
+    <div class="pill ok"><span class="dot"></span> DWD</div>
+    <div class="pill ok"><span class="dot"></span> OSM</div>
+    <div class="pill ${cdsKey ? 'ok' : 'warn'}"><span class="dot"></span> CDS</div>
+  `;
+}
+loadKeys();
+updateStatusPills();
+
+/* ═══════════════════════════════════════════════════════
+   LOGGING
+   ═══════════════════════════════════════════════════════ */
+function log(target, level, msg) {
+  const el = document.getElementById(target + '-log');
+  if (!el) return;
+  const card = document.getElementById(target + '-results-card');
+  if (card) card.style.display = 'block';
+  const time = new Date().toLocaleTimeString('de-DE', {hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  el.innerHTML += `<div class="log-line">
+    <span class="log-time">${time}</span>
+    <span class="log-tag ${level}">${level.toUpperCase()}</span>
+    <span class="log-msg">${msg}</span>
+  </div>`;
+  el.scrollTop = el.scrollHeight;
+}
+function clearLog(target) {
+  const el = document.getElementById(target + '-log');
+  if (el) el.innerHTML = '';
+}
+
+/* ═══════════════════════════════════════════════════════
+   HISTORY
+   ═══════════════════════════════════════════════════════ */
+function addHistory(source, params, status) {
+  state.history.unshift({
+    ts: new Date().toISOString(),
+    source,
+    params: JSON.stringify(params).slice(0, 300),
+    status,
+  });
+  if (state.history.length > 50) state.history.pop();
+  localStorage.setItem('crh_history', JSON.stringify(state.history));
+  renderHistory();
+}
+function renderHistory() {
+  const el = document.getElementById('history-list');
+  if (!state.history.length) {
+    el.innerHTML = '<div class="empty-state"><div class="icon">📋</div><p>Noch keine Abfragen.</p></div>';
+    return;
+  }
+  el.innerHTML = '<div class="data-table-wrap"><table class="data-table"><thead><tr>' +
+    '<th>Zeitpunkt</th><th>Quelle</th><th>Parameter</th><th>Status</th></tr></thead><tbody>' +
+    state.history.map(h => `<tr>
+      <td>${new Date(h.ts).toLocaleString('de-DE')}</td>
+      <td>${h.source}</td>
+      <td style="max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${h.params}</td>
+      <td><span class="log-tag ${h.status === 'ok' ? 'ok' : 'err'}">${h.status}</span></td>
+    </tr>`).join('') + '</tbody></table></div>';
+}
+function clearHistory() {
+  if (!confirm('Historie wirklich löschen?')) return;
+  state.history = [];
+  localStorage.setItem('crh_history', '[]');
+  renderHistory();
+}
+function exportHistory() {
+  downloadFile('climate-risk-history.json', JSON.stringify(state.history, null, 2));
+}
+renderHistory();
+
+/* ═══════════════════════════════════════════════════════
+   EXPORT UTILITIES
+   ═══════════════════════════════════════════════════════ */
+function downloadFile(name, content, type = 'application/json') {
+  const blob = new Blob([content], { type });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = name; a.click();
+  URL.revokeObjectURL(url);
+}
+function exportJSON(source) {
+  const data = state.results[source];
+  if (!data) return;
+  downloadFile(`climate-risk-${source}-${Date.now()}.json`, JSON.stringify(data, null, 2));
+}
+function exportCSV(source) {
+  const data = state.results[source];
+  if (!data) return;
+  let rows = [];
+  if (Array.isArray(data)) {
+    if (!data.length) return;
+    const keys = Object.keys(data[0]);
+    rows.push(keys.join(';'));
+    data.forEach(r => rows.push(keys.map(k => JSON.stringify(r[k] ?? '')).join(';')));
+  } else {
+    rows.push('key;value');
+    Object.entries(data).forEach(([k, v]) => rows.push(`${k};${JSON.stringify(v)}`));
+  }
+  downloadFile(`climate-risk-${source}-${Date.now()}.csv`, rows.join('\n'), 'text/csv');
+}
+function copyToClipboard(source) {
+  const data = state.results[source];
+  if (!data) return;
+  navigator.clipboard.writeText(JSON.stringify(data, null, 2))
+    .then(() => log(source, 'ok', 'In Zwischenablage kopiert.'));
+}
+
+/* ═══════════════════════════════════════════════════════
+   CDS QUERIES
+   ═══════════════════════════════════════════════════════ */
+function buildCDSRequest() {
+  const yearRaw = document.getElementById('cds-year').value.trim();
+  let years;
+  if (yearRaw.includes('/')) {
+    const [a, b] = yearRaw.split('/').map(Number);
+    years = Array.from({length: b - a + 1}, (_, i) => String(a + i));
+  } else {
+    years = yearRaw.split(',').map(s => s.trim());
+  }
+  const months = document.getElementById('cds-months').value.split(',').map(s => s.trim());
+  const area = document.getElementById('cds-area').value.split(',').map(Number);
+  return {
+    dataset: 'reanalysis-era5-single-levels',
+    request: {
+      product_type: [document.getElementById('cds-product').value],
+      variable: [document.getElementById('cds-variable').value],
+      year: years,
+      month: months,
+      day: ['01'],
+      time: ['12:00'],
+      area: area,
+      data_format: document.getElementById('cds-format').value,
+    }
+  };
+}
+
+function previewCDS() {
+  const {dataset, request} = buildCDSRequest();
+  clearLog('cds');
+  log('cds', 'info', '<strong>Dataset:</strong> ' + dataset);
+  log('cds', 'info', '<strong>REST-Endpoint:</strong> POST https://cds.climate.copernicus.eu/api/retrieve/v1/processes/' + dataset + '/execute/');
+  log('cds', 'info', '<strong>Request-Body:</strong>');
+  log('cds', 'info', JSON.stringify(request, null, 2).replace(/\n/g, '<br>').replace(/ /g, '&nbsp;'));
+}
+
+function copyCDSPython() {
+  const {dataset, request} = buildCDSRequest();
+  const code = `import cdsapi\n\nclient = cdsapi.Client()\n\ndataset = '${dataset}'\nrequest = ${JSON.stringify(request, null, 4)}\n\nclient.retrieve(dataset, request, 'download.nc')`;
+  navigator.clipboard.writeText(code).then(() => {
+    clearLog('cds');
+    log('cds', 'ok', 'Python-Code in Zwischenablage kopiert ✓');
+  });
+}
+
+async function queryCDS() {
+  const token = getKey('cds');
+  if (!token) { clearLog('cds'); log('cds', 'err', 'Kein CDS-Token hinterlegt. Bitte unter "API-Schlüssel verwalten" eintragen.'); return; }
+  const {dataset, request} = buildCDSRequest();
+  clearLog('cds');
+  const progressEl = document.getElementById('cds-progress');
+  progressEl.style.width = '10%';
+  log('cds', 'info', 'Sende Anfrage an CDS REST API...');
+  log('cds', 'info', 'POST /retrieve/v1/processes/' + dataset + '/execute/');
+
+  try {
+    const resp = await fetch(`https://cds.climate.copernicus.eu/api/retrieve/v1/processes/${dataset}/execute/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'PRIVATE-TOKEN': token,
+      },
+      body: JSON.stringify({ inputs: request }),
+    });
+    progressEl.style.width = '40%';
+
+    if (!resp.ok) {
+      const errText = await resp.text();
+      log('cds', 'err', `HTTP ${resp.status}: ${errText.slice(0, 500)}`);
+      addHistory('CDS', request, 'error');
+      return;
+    }
+
+    const data = await resp.json();
+    log('cds', 'ok', 'Job erstellt: ' + (data.jobID || data.requestId || JSON.stringify(data).slice(0, 200)));
+    progressEl.style.width = '60%';
+
+    // Poll job status
+    if (data.jobID) {
+      await pollCDSJob(data.jobID, token, progressEl);
+    } else {
+      state.results.cds = data;
+      progressEl.style.width = '100%';
+      log('cds', 'ok', 'Antwort erhalten. ' + JSON.stringify(data).slice(0, 300));
+      document.getElementById('cds-export').style.display = 'flex';
+    }
+    addHistory('CDS', request, 'ok');
+  } catch(e) {
+    log('cds', 'err', 'Netzwerkfehler: ' + e.message);
+    log('cds', 'warn', 'Hinweis: CORS-Einschränkungen können Browser-Direktzugriff auf CDS blockieren. Nutze ggf. einen Proxy oder das Python-Script.');
+    addHistory('CDS', request, 'error');
+  }
+}
+
+async function pollCDSJob(jobId, token, progressEl) {
+  for (let i = 0; i < 60; i++) {
+    await new Promise(r => setTimeout(r, 5000));
+    try {
+      const resp = await fetch(`https://cds.climate.copernicus.eu/api/retrieve/v1/jobs/${jobId}`, {
+        headers: { 'PRIVATE-TOKEN': token },
+      });
+      const job = await resp.json();
+      const status = job.status || job.state || 'unknown';
+      log('cds', 'info', `Job ${jobId}: Status = ${status}`);
+      progressEl.style.width = Math.min(60 + i * 2, 95) + '%';
+
+      if (status === 'successful' || status === 'completed') {
+        state.results.cds = job;
+        progressEl.style.width = '100%';
+        log('cds', 'ok', 'Download bereit! URL: ' + (job.location || job.result?.[0]?.location || 'siehe Ergebnis'));
+        document.getElementById('cds-export').style.display = 'flex';
+        return;
+      }
+      if (status === 'failed') {
+        log('cds', 'err', 'Job fehlgeschlagen: ' + JSON.stringify(job).slice(0, 400));
+        return;
+      }
+    } catch(e) {
+      log('cds', 'warn', 'Polling-Fehler: ' + e.message);
+    }
+  }
+  log('cds', 'warn', 'Timeout nach 5 Minuten. Job läuft ggf. noch — prüfe das CDS-Dashboard.');
+}
+
+/* ═══════════════════════════════════════════════════════
+   CMIP6 / CORDEX / IPCC ATLAS — Sub-Tab Navigation
+   ═══════════════════════════════════════════════════════ */
+document.querySelectorAll('#cmip6-subtabs .tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('#cmip6-subtabs .tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.cmip6-subtab').forEach(c => { c.style.display = 'none'; c.classList.remove('active'); });
+    tab.classList.add('active');
+    const target = document.getElementById(tab.dataset.cmip6tab);
+    if (target) { target.style.display = 'block'; target.classList.add('active'); }
+  });
+});
+
+/* Custom date range toggle */
+document.getElementById('cmip6-date-range')?.addEventListener('change', e => {
+  document.getElementById('cmip6-custom-date-group').style.display =
+    e.target.value === 'custom' ? 'flex' : 'none';
+});
+
+function cmip6Log(level, msg) {
+  const el = document.getElementById('cmip6-log');
+  const card = document.getElementById('cmip6-results-inner');
+  if (card) card.style.display = 'block';
+  const time = new Date().toLocaleTimeString('de-DE', {hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  el.innerHTML += `<div class="log-line">
+    <span class="log-time">${time}</span>
+    <span class="log-tag ${level}">${level.toUpperCase()}</span>
+    <span class="log-msg">${msg}</span>
+  </div>`;
+  el.scrollTop = el.scrollHeight;
+}
+function clearCmip6Log() { document.getElementById('cmip6-log').innerHTML = ''; }
+
+/* ── CMIP6 Global ── */
+function buildCMIP6Request() {
+  const dateRange = document.getElementById('cmip6-date-range').value;
+  const date = dateRange === 'custom'
+    ? document.getElementById('cmip6-custom-date').value.trim()
+    : dateRange;
+  const areaRaw = document.getElementById('cmip6-area').value.trim();
+  const request = {
+    temporal_resolution: document.getElementById('cmip6-temporal').value,
+    experiment: document.getElementById('cmip6-experiment').value,
+    level: document.getElementById('cmip6-level').value,
+    variable: document.getElementById('cmip6-variable').value,
+    model: document.getElementById('cmip6-model').value,
+    date: date,
+    download_format: document.getElementById('cmip6-format').value,
+  };
+  if (areaRaw) request.area = areaRaw.split(',').map(Number);
+  return request;
+}
+
+function previewCMIP6() {
+  clearCmip6Log();
+  const request = buildCMIP6Request();
+  cmip6Log('info', '<strong>Dataset:</strong> projections-cmip6');
+  cmip6Log('info', '<strong>REST:</strong> POST https://cds.climate.copernicus.eu/api/retrieve/v1/processes/projections-cmip6/execute/');
+  cmip6Log('info', '<strong>Request-Body:</strong>');
+  cmip6Log('info', JSON.stringify(request, null, 2).replace(/\n/g, '<br>').replace(/ /g, '&nbsp;'));
+}
+
+function copyCMIP6Python() {
+  const request = buildCMIP6Request();
+  const code = `import cdsapi
+
+client = cdsapi.Client()
+
+# CMIP6 Klimaprojektion
+# Dataset: projections-cmip6
+# Doku: https://cds.climate.copernicus.eu/datasets/projections-cmip6
+
+request = ${JSON.stringify(request, null, 4)}
+
+client.retrieve('projections-cmip6', request, 'cmip6_download.zip')
+print('Download abgeschlossen.')`;
+  navigator.clipboard.writeText(code).then(() => {
+    clearCmip6Log();
+    cmip6Log('ok', 'Python-Code in Zwischenablage kopiert ✓');
+    cmip6Log('info', 'Führe aus mit: <code>python download_cmip6.py</code>');
+  });
+}
+
+async function queryCMIP6() {
+  const token = getKey('cds');
+  if (!token) { clearCmip6Log(); cmip6Log('err', 'Kein CDS-Token hinterlegt. Bitte unter 🔑 eintragen.'); return; }
+
+  const request = buildCMIP6Request();
+  clearCmip6Log();
+  const progressEl = document.getElementById('cmip6-progress');
+  progressEl.style.width = '10%';
+
+  cmip6Log('info', 'Sende CMIP6-Anfrage an CDS REST API...');
+  cmip6Log('info', `Experiment: ${request.experiment} · Modell: ${request.model} · Zeitraum: ${request.date}`);
+
+  try {
+    const resp = await fetch('https://cds.climate.copernicus.eu/api/retrieve/v1/processes/projections-cmip6/execute/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'PRIVATE-TOKEN': token },
+      body: JSON.stringify({ inputs: request }),
+    });
+    progressEl.style.width = '40%';
+
+    if (!resp.ok) {
+      const errText = await resp.text();
+      cmip6Log('err', `HTTP ${resp.status}: ${errText.slice(0, 500)}`);
+      if (resp.status === 403) cmip6Log('warn', 'Hinweis: Lizenzbedingungen für projections-cmip6 müssen auf der CDS-Website akzeptiert werden.');
+      addHistory('CMIP6', request, 'error');
+      return;
+    }
+
+    const data = await resp.json();
+    const jobId = data.jobID || data.requestId;
+    cmip6Log('ok', 'Job erstellt: ' + (jobId || JSON.stringify(data).slice(0, 200)));
+    progressEl.style.width = '60%';
+
+    if (jobId) {
+      // Poll job
+      for (let i = 0; i < 120; i++) {
+        await new Promise(r => setTimeout(r, 5000));
+        try {
+          const jr = await fetch(`https://cds.climate.copernicus.eu/api/retrieve/v1/jobs/${jobId}`, {
+            headers: { 'PRIVATE-TOKEN': token },
+          });
+          const job = await jr.json();
+          const status = job.status || job.state || 'unknown';
+          cmip6Log('info', `Job ${jobId}: ${status}`);
+          progressEl.style.width = Math.min(60 + i, 95) + '%';
+
+          if (status === 'successful' || status === 'completed') {
+            state.results.cmip6 = job;
+            progressEl.style.width = '100%';
+            cmip6Log('ok', 'Download bereit! ' + (job.location || JSON.stringify(job.result || {}).slice(0, 300)));
+            document.getElementById('cmip6-export').style.display = 'flex';
+            addHistory('CMIP6', request, 'ok');
+            return;
+          }
+          if (status === 'failed') {
+            cmip6Log('err', 'Job fehlgeschlagen: ' + JSON.stringify(job).slice(0, 400));
+            addHistory('CMIP6', request, 'error');
+            return;
+          }
+        } catch(pe) {
+          cmip6Log('warn', 'Polling-Fehler: ' + pe.message);
+        }
+      }
+      cmip6Log('warn', 'Timeout — CMIP6-Jobs können >10 Min dauern. Prüfe das CDS-Dashboard.');
+    } else {
+      state.results.cmip6 = data;
+      progressEl.style.width = '100%';
+      cmip6Log('ok', JSON.stringify(data).slice(0, 500));
+      document.getElementById('cmip6-export').style.display = 'flex';
+    }
+    addHistory('CMIP6', request, 'ok');
+  } catch(e) {
+    cmip6Log('err', 'Netzwerkfehler: ' + e.message);
+    cmip6Log('warn', 'CORS blockiert ggf. Browser-Zugriff. Nutze den 🐍 Python-Code-Button.');
+    addHistory('CMIP6', request, 'error');
+  }
+}
+
+/* ── CORDEX Regional ── */
+function buildCORDEXRequest() {
+  return {
+    domain: document.getElementById('cordex-domain').value,
+    experiment: document.getElementById('cordex-experiment').value,
+    variable: document.getElementById('cordex-variable').value,
+    temporal_resolution: document.getElementById('cordex-temporal').value,
+    start_year: document.getElementById('cordex-start-year').value,
+    end_year: document.getElementById('cordex-end-year').value,
+  };
+}
+
+function previewCORDEX() {
+  clearCmip6Log();
+  const request = buildCORDEXRequest();
+  cmip6Log('info', '<strong>Dataset:</strong> projections-cordex-domains-single-levels');
+  cmip6Log('info', JSON.stringify(request, null, 2).replace(/\n/g, '<br>').replace(/ /g, '&nbsp;'));
+}
+
+function copyCORDEXPython() {
+  const request = buildCORDEXRequest();
+  const code = `import cdsapi
+
+client = cdsapi.Client()
+
+# CORDEX Regionale Klimaprojektion
+# Dataset: projections-cordex-domains-single-levels
+# Doku: https://cds.climate.copernicus.eu/datasets/projections-cordex-domains-single-levels
+
+request = ${JSON.stringify(request, null, 4)}
+
+client.retrieve('projections-cordex-domains-single-levels', request, 'cordex_download.zip')
+print('Download abgeschlossen.')`;
+  navigator.clipboard.writeText(code).then(() => {
+    clearCmip6Log();
+    cmip6Log('ok', 'CORDEX Python-Code kopiert ✓');
+  });
+}
+
+async function queryCORDEX() {
+  const token = getKey('cds');
+  if (!token) { clearCmip6Log(); cmip6Log('err', 'Kein CDS-Token hinterlegt.'); return; }
+  const request = buildCORDEXRequest();
+  clearCmip6Log();
+  cmip6Log('info', 'CORDEX-Abfrage wird gesendet...');
+
+  try {
+    const resp = await fetch('https://cds.climate.copernicus.eu/api/retrieve/v1/processes/projections-cordex-domains-single-levels/execute/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'PRIVATE-TOKEN': token },
+      body: JSON.stringify({ inputs: request }),
+    });
+    const data = await resp.json();
+    state.results.cmip6 = data;
+    cmip6Log(resp.ok ? 'ok' : 'err', JSON.stringify(data).slice(0, 500));
+    if (resp.ok) document.getElementById('cmip6-export').style.display = 'flex';
+    addHistory('CORDEX', request, resp.ok ? 'ok' : 'error');
+  } catch(e) {
+    cmip6Log('err', e.message);
+    cmip6Log('warn', 'CORS-Hinweis: Nutze den 🐍 Python-Code-Button.');
+    addHistory('CORDEX', request, 'error');
+  }
+}
+
+/* ── IPCC AR6 Atlas ── */
+function buildAtlasRequest() {
+  return {
+    origin: document.getElementById('atlas-origin').value,
+    experiment: document.getElementById('atlas-experiment').value,
+    variable: document.getElementById('atlas-variable').value,
+    period: document.getElementById('atlas-period').value,
+    area: document.getElementById('atlas-area').value.trim().split(',').map(Number),
+  };
+}
+
+function previewAtlas() {
+  clearCmip6Log();
+  const request = buildAtlasRequest();
+  cmip6Log('info', '<strong>Dataset:</strong> projections-climate-atlas');
+  cmip6Log('info', JSON.stringify(request, null, 2).replace(/\n/g, '<br>').replace(/ /g, '&nbsp;'));
+}
+
+function copyAtlasPython() {
+  const request = buildAtlasRequest();
+  const code = `import cdsapi
+
+client = cdsapi.Client()
+
+# IPCC AR6 Interactive Atlas — Projektionsdaten
+# Dataset: projections-climate-atlas
+# Doku: https://cds.climate.copernicus.eu/datasets/projections-climate-atlas
+
+request = ${JSON.stringify(request, null, 4)}
+
+client.retrieve('projections-climate-atlas', request, 'atlas_download.zip')
+print('Download abgeschlossen.')`;
+  navigator.clipboard.writeText(code).then(() => {
+    clearCmip6Log();
+    cmip6Log('ok', 'IPCC Atlas Python-Code kopiert ✓');
+  });
+}
+
+async function queryAtlas() {
+  const token = getKey('cds');
+  if (!token) { clearCmip6Log(); cmip6Log('err', 'Kein CDS-Token hinterlegt.'); return; }
+  const request = buildAtlasRequest();
+  clearCmip6Log();
+  cmip6Log('info', 'IPCC Atlas-Abfrage wird gesendet...');
+
+  try {
+    const resp = await fetch('https://cds.climate.copernicus.eu/api/retrieve/v1/processes/projections-climate-atlas/execute/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'PRIVATE-TOKEN': token },
+      body: JSON.stringify({ inputs: request }),
+    });
+    const data = await resp.json();
+    state.results.cmip6 = data;
+    cmip6Log(resp.ok ? 'ok' : 'err', JSON.stringify(data).slice(0, 500));
+    if (resp.ok) document.getElementById('cmip6-export').style.display = 'flex';
+    addHistory('IPCC-Atlas', request, resp.ok ? 'ok' : 'error');
+  } catch(e) {
+    cmip6Log('err', e.message);
+    cmip6Log('warn', 'CORS-Hinweis: Nutze den 🐍 Python-Code-Button.');
+    addHistory('IPCC-Atlas', request, 'error');
+  }
+}
+
+/* ═══════════════════════════════════════════════════════
+   CUSTOM CDS
+   ═══════════════════════════════════════════════════════ */
+async function queryCustomCDS() {
+  const token = getKey('cds');
+  if (!token) { clearLog('cds'); log('cds', 'err', 'Kein CDS-Token hinterlegt.'); return; }
+  const dataset = document.getElementById('cds-custom-dataset').value.trim();
+  let request;
+  try { request = JSON.parse(document.getElementById('cds-custom-json').value); }
+  catch(e) { clearLog('cds'); log('cds', 'err', 'Ungültiges JSON: ' + e.message); return; }
+
+  clearLog('cds');
+  log('cds', 'info', 'Custom-Abfrage: ' + dataset);
+  try {
+    const resp = await fetch(`https://cds.climate.copernicus.eu/api/retrieve/v1/processes/${dataset}/execute/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'PRIVATE-TOKEN': token },
+      body: JSON.stringify({ inputs: request }),
+    });
+    const data = await resp.json();
+    state.results.cds = data;
+    log('cds', resp.ok ? 'ok' : 'err', JSON.stringify(data).slice(0, 500));
+    if (resp.ok) document.getElementById('cds-export').style.display = 'flex';
+    addHistory('CDS-Custom', {dataset}, resp.ok ? 'ok' : 'error');
+  } catch(e) {
+    log('cds', 'err', e.message);
+    addHistory('CDS-Custom', {dataset}, 'error');
+  }
+}
+
+/* ═══════════════════════════════════════════════════════
+   ADS QUERIES
+   ═══════════════════════════════════════════════════════ */
+function previewADS() {
+  const request = {
+    variable: [document.getElementById('ads-variable').value],
+    year: document.getElementById('ads-year').value.split(',').map(s => s.trim()),
+    month: document.getElementById('ads-months').value.split(',').map(s => s.trim()),
+    area: document.getElementById('ads-area').value.split(',').map(Number),
+  };
+  clearLog('ads');
+  log('ads', 'info', '<strong>Dataset:</strong> ' + document.getElementById('ads-dataset').value);
+  log('ads', 'info', '<strong>URL:</strong> POST https://ads.atmosphere.copernicus.eu/api/retrieve/v1/processes/...');
+  log('ads', 'info', JSON.stringify(request, null, 2).replace(/\n/g, '<br>').replace(/ /g, '&nbsp;'));
+}
+
+async function queryADS() {
+  const token = getKey('cds');
+  if (!token) { clearLog('ads'); log('ads', 'err', 'Kein CDS/ADS-Token hinterlegt.'); return; }
+  const dataset = document.getElementById('ads-dataset').value;
+  const request = {
+    variable: [document.getElementById('ads-variable').value],
+    year: document.getElementById('ads-year').value.split(',').map(s => s.trim()),
+    month: document.getElementById('ads-months').value.split(',').map(s => s.trim()),
+    area: document.getElementById('ads-area').value.split(',').map(Number),
+  };
+  clearLog('ads');
+  log('ads', 'info', 'Sende Anfrage an ADS...');
+
+  try {
+    const resp = await fetch(`https://ads.atmosphere.copernicus.eu/api/retrieve/v1/processes/${dataset}/execute/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'PRIVATE-TOKEN': token },
+      body: JSON.stringify({ inputs: request }),
+    });
+    const data = await resp.json();
+    state.results.ads = data;
+    log('ads', resp.ok ? 'ok' : 'err', JSON.stringify(data).slice(0, 500));
+    if (resp.ok) document.getElementById('ads-export').style.display = 'flex';
+    addHistory('ADS', {dataset, variable: request.variable[0]}, resp.ok ? 'ok' : 'error');
+  } catch(e) {
+    log('ads', 'err', 'Netzwerkfehler: ' + e.message);
+    log('ads', 'warn', 'CORS kann Browser-Zugriff auf ADS blockieren. Nutze ggf. Python oder einen Proxy.');
+    addHistory('ADS', {dataset}, 'error');
+  }
+}
+
+/* ═══════════════════════════════════════════════════════
+   MARINE
+   ═══════════════════════════════════════════════════════ */
+function previewMarine() {
+  clearLog('marine');
+  const product = document.getElementById('marine-product').value;
+  const variable = document.getElementById('marine-variable').value;
+  log('marine', 'info', `<strong>Product:</strong> ${product}`);
+  log('marine', 'info', `<strong>Variable:</strong> ${variable}`);
+  log('marine', 'info', `<strong>BBOX:</strong> ${document.getElementById('marine-lon-min').value},${document.getElementById('marine-lat-min').value},${document.getElementById('marine-lon-max').value},${document.getElementById('marine-lat-max').value}`);
+  log('marine', 'warn', 'CMEMS nutzt die copernicusmarine Python-Toolbox. Browser-Zugriff erfordert einen Proxy.');
+  log('marine', 'info', '<strong>Python:</strong> copernicusmarine subset --dataset-id ' + product + ' --variable ' + variable + ' ...');
+}
+
+async function queryMarine() {
+  previewMarine();
+  log('marine', 'warn', 'Direkter Browser-Zugriff auf CMEMS ist nicht möglich (kein CORS). Nutze das Python-CLI:');
+  log('marine', 'info', 'pip install copernicusmarine && copernicusmarine login');
+  addHistory('CMEMS', {product: document.getElementById('marine-product').value}, 'info');
+}
+
+/* ═══════════════════════════════════════════════════════
+   LAND
+   ═══════════════════════════════════════════════════════ */
+function previewLand() {
+  clearLog('land');
+  const ds = document.getElementById('land-dataset').value;
+  log('land', 'info', `<strong>Datensatz:</strong> ${ds}`);
+  log('land', 'info', `<strong>BBOX:</strong> ${document.getElementById('land-bbox').value}`);
+  log('land', 'info', `<strong>Jahr:</strong> ${document.getElementById('land-year').value}`);
+  log('land', 'info', 'CLMS stellt Daten primär als Download bereit. WMS/WCS-Endpoints variieren je Datensatz.');
+  log('land', 'info', '<a href="https://land.copernicus.eu/en/products" target="_blank" style="color:var(--accent)">→ CLMS Produktkatalog öffnen</a>');
+}
+
+async function queryLand() {
+  previewLand();
+  const endpoint = document.getElementById('land-endpoint').value.trim();
+  if (!endpoint) {
+    log('land', 'warn', 'Kein WMS/WCS-Endpoint angegeben. Bitte einen Endpoint aus dem CLMS-Katalog eintragen.');
+    return;
+  }
+  log('land', 'info', 'Versuche GetCapabilities...');
+  try {
+    const resp = await fetch(endpoint + '?service=WMS&request=GetCapabilities');
+    const text = await resp.text();
+    log('land', 'ok', 'Capabilities empfangen (' + text.length + ' Bytes)');
+    state.results.land = text;
+    addHistory('CLMS', {endpoint}, 'ok');
+  } catch(e) {
+    log('land', 'err', 'Fehler: ' + e.message);
+    addHistory('CLMS', {endpoint}, 'error');
+  }
+}
+
+/* ═══════════════════════════════════════════════════════
+   DWD / BRIGHT SKY
+   ═══════════════════════════════════════════════════════ */
+function previewDWD() {
+  clearLog('dwd');
+  const ep = document.getElementById('dwd-endpoint').value;
+  const lat = document.getElementById('dwd-lat').value;
+  const lon = document.getElementById('dwd-lon').value;
+  const date = document.getElementById('dwd-date').value;
+  const dateEnd = document.getElementById('dwd-date-end').value;
+  let url = `https://api.brightsky.dev/${ep}?lat=${lat}&lon=${lon}`;
+  if (ep === 'weather') url += `&date=${date}&last_date=${dateEnd}`;
+  log('dwd', 'info', '<strong>URL:</strong> <a href="'+url+'" target="_blank" style="color:var(--accent)">'+url+'</a>');
+}
+
+async function queryDWD() {
+  clearLog('dwd');
+  const ep = document.getElementById('dwd-endpoint').value;
+  const lat = document.getElementById('dwd-lat').value;
+  const lon = document.getElementById('dwd-lon').value;
+  const date = document.getElementById('dwd-date').value;
+  const dateEnd = document.getElementById('dwd-date-end').value;
+
+  let url = `https://api.brightsky.dev/${ep}?lat=${lat}&lon=${lon}`;
+  if (ep === 'weather') url += `&date=${date}&last_date=${dateEnd}`;
+
+  log('dwd', 'info', 'Anfrage: ' + url);
+  try {
+    const resp = await fetch(url);
+    const data = await resp.json();
+
+    if (data.weather && data.weather.length) {
+      state.results.dwd = data.weather;
+      log('dwd', 'ok', data.weather.length + ' Datensätze empfangen');
+
+      // Render table
+      const tableWrap = document.getElementById('dwd-table-wrap');
+      const table = document.getElementById('dwd-table');
+      const keys = ['timestamp','temperature','precipitation','wind_speed','cloud_cover','sunshine','pressure_msl'];
+      const labels = ['Zeitstempel','Temp. °C','Niederschlag mm','Wind km/h','Bewölkung %','Sonne min','Druck hPa'];
+      table.innerHTML = '<thead><tr>' + labels.map(l => `<th>${l}</th>`).join('') + '</tr></thead><tbody>' +
+        data.weather.slice(0, 100).map(w => '<tr>' + keys.map(k => `<td>${w[k] ?? '—'}</td>`).join('') + '</tr>').join('') +
+        '</tbody>';
+      tableWrap.style.display = 'block';
+      document.getElementById('dwd-export').style.display = 'flex';
+    } else if (data.alerts) {
+      state.results.dwd = data.alerts;
+      log('dwd', 'ok', (data.alerts.length || 0) + ' Warnungen');
+      data.alerts?.forEach(a => log('dwd', 'warn', `${a.headline || a.event}: ${(a.description || '').slice(0,200)}`));
+      document.getElementById('dwd-export').style.display = 'flex';
+    } else if (data.weather && data.weather.length === 0) {
+      log('dwd', 'warn', 'Keine Daten für diesen Zeitraum/Standort.');
+    } else {
+      state.results.dwd = data;
+      log('dwd', 'ok', JSON.stringify(data).slice(0, 500));
+      document.getElementById('dwd-export').style.display = 'flex';
+    }
+    addHistory('DWD', {ep, lat, lon, date}, 'ok');
+  } catch(e) {
+    log('dwd', 'err', 'Fehler: ' + e.message);
+    addHistory('DWD', {ep, lat, lon}, 'error');
+  }
+}
+
+/* ═══════════════════════════════════════════════════════
+   OSM / OVERPASS
+   ═══════════════════════════════════════════════════════ */
+const osmPresets = {
+  floodplain: `[out:json][timeout:60];\n(\n  node["natural"="floodplain"]({{bbox}});\n  way["natural"="floodplain"]({{bbox}});\n  relation["natural"="floodplain"]({{bbox}});\n);\nout body;\n>;\nout skel qt;`,
+  rivers: `[out:json][timeout:60];\n(\n  way["waterway"="river"]({{bbox}});\n  way["waterway"="stream"]({{bbox}});\n);\nout body;\n>;\nout skel qt;`,
+  protected: `[out:json][timeout:60];\n(\n  way["boundary"="protected_area"]({{bbox}});\n  relation["boundary"="protected_area"]({{bbox}});\n);\nout body;\n>;\nout skel qt;`,
+  industrial: `[out:json][timeout:60];\n(\n  way["landuse"="industrial"]({{bbox}});\n  relation["landuse"="industrial"]({{bbox}});\n);\nout body;\n>;\nout skel qt;`,
+  hospitals: `[out:json][timeout:60];\n(\n  node["amenity"="hospital"]({{bbox}});\n  way["amenity"="hospital"]({{bbox}});\n);\nout body;\n>;\nout skel qt;`,
+  powerlines: `[out:json][timeout:60];\n(\n  way["power"="line"]({{bbox}});\n);\nout body;\n>;\nout skel qt;`,
+};
+
+function loadOSMPreset() {
+  const val = document.getElementById('osm-preset').value;
+  if (val && osmPresets[val]) document.getElementById('osm-query').value = osmPresets[val];
+}
+
+async function queryOSM() {
+  clearLog('osm');
+  const bbox = document.getElementById('osm-bbox').value.trim();
+  let query = document.getElementById('osm-query').value.replace(/\{\{bbox\}\}/g, bbox);
+
+  log('osm', 'info', 'Sende Overpass-Abfrage...');
+  try {
+    const resp = await fetch('https://overpass-api.de/api/interpreter', {
+      method: 'POST',
+      body: 'data=' + encodeURIComponent(query),
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    });
+    const data = await resp.json();
+    state.results.osm = data.elements || data;
+    const count = data.elements?.length || 0;
+    log('osm', 'ok', `${count} Elemente gefunden`);
+
+    if (count > 0) {
+      const types = {};
+      data.elements.forEach(e => { types[e.type] = (types[e.type] || 0) + 1; });
+      Object.entries(types).forEach(([t, c]) => log('osm', 'info', `${t}: ${c}`));
+      document.getElementById('osm-export').style.display = 'flex';
+    }
+    addHistory('OSM', {bbox, query: query.slice(0, 100)}, 'ok');
+  } catch(e) {
+    log('osm', 'err', 'Fehler: ' + e.message);
+    addHistory('OSM', {bbox}, 'error');
+  }
+}
+
+/* ═══════════════════════════════════════════════════════
+   EU OPEN DATA
+   ═══════════════════════════════════════════════════════ */
+async function queryEU() {
+  clearLog('eudata');
+  const mode = document.getElementById('eu-mode').value;
+  const query = document.getElementById('eu-query').value.trim();
+  const limit = document.getElementById('eu-limit').value;
+
+  if (mode === 'search') {
+    const url = `https://data.europa.eu/api/hub/search/datasets?q=${encodeURIComponent(query)}&limit=${limit}&locale=de`;
+    log('eudata', 'info', 'Suche: ' + url);
+    try {
+      const resp = await fetch(url);
+      const data = await resp.json();
+      const results = data.result?.results || data.results || [];
+      state.results.eudata = results;
+      log('eudata', 'ok', `${results.length} Datensätze gefunden`);
+
+      if (results.length) {
+        const table = document.getElementById('eudata-table');
+        table.innerHTML = '<thead><tr><th>Titel</th><th>Publisher</th><th>Formate</th></tr></thead><tbody>' +
+          results.slice(0, 30).map(r => {
+            const title = r.title?.de || r.title?.en || r.id || '—';
+            const pub = r.catalog?.publisher?.name || r.publisher?.name || '—';
+            const formats = (r.distributions || []).map(d => d.format?.label || d.format?.id || '').filter(Boolean).join(', ');
+            return `<tr><td>${title}</td><td>${pub}</td><td>${formats || '—'}</td></tr>`;
+          }).join('') + '</tbody>';
+        document.getElementById('eudata-table-wrap').style.display = 'block';
+        document.getElementById('eudata-export').style.display = 'flex';
+      }
+      addHistory('EU-Data', {query, limit}, 'ok');
+    } catch(e) {
+      log('eudata', 'err', 'Fehler: ' + e.message);
+      addHistory('EU-Data', {query}, 'error');
+    }
+  } else {
+    const sparql = document.getElementById('eu-sparql').value;
+    const url = `https://data.europa.eu/sparql?query=${encodeURIComponent(sparql)}&format=application/json`;
+    log('eudata', 'info', 'SPARQL-Abfrage...');
+    try {
+      const resp = await fetch(url);
+      const data = await resp.json();
+      state.results.eudata = data;
+      const bindings = data.results?.bindings || [];
+      log('eudata', 'ok', `${bindings.length} Ergebnisse`);
+      bindings.slice(0, 10).forEach(b => {
+        const vals = Object.values(b).map(v => v.value).join(' | ');
+        log('eudata', 'info', vals);
+      });
+      document.getElementById('eudata-export').style.display = 'flex';
+      addHistory('EU-SPARQL', {query: sparql.slice(0, 100)}, 'ok');
+    } catch(e) {
+      log('eudata', 'err', 'Fehler: ' + e.message);
+      addHistory('EU-SPARQL', {}, 'error');
+    }
+  }
+}
+
+/* ═══════════════════════════════════════════════════════
+   BATCH
+   ═══════════════════════════════════════════════════════ */
+async function runBatch() {
+  clearLog('batch');
+  const progressEl = document.getElementById('batch-progress');
+  const sources = [...document.querySelectorAll('#batch-sources input:checked')].map(i => i.value);
+  if (!sources.length) { log('batch', 'err', 'Keine Quellen ausgewählt.'); return; }
+
+  log('batch', 'info', 'Batch-Start: ' + sources.join(', '));
+  let done = 0;
+
+  for (const src of sources) {
+    progressEl.style.width = (done / sources.length * 100) + '%';
+    log('batch', 'info', `Starte ${src.toUpperCase()}...`);
+
+    try {
+      if (src === 'dwd') await queryDWD();
+      else if (src === 'osm') await queryOSM();
+      else if (src === 'cds') await queryCDS();
+      else if (src === 'ads') await queryADS();
+      else if (src === 'eudata') await queryEU();
+      log('batch', 'ok', `${src.toUpperCase()} abgeschlossen`);
+    } catch(e) {
+      log('batch', 'err', `${src.toUpperCase()} fehlgeschlagen: ${e.message}`);
+    }
+    done++;
+  }
+  progressEl.style.width = '100%';
+  log('batch', 'ok', 'Batch abgeschlossen (' + done + '/' + sources.length + ')');
+}
+
+/* ═══════════════════════════════════════════════════════
+   TAB CONTENT VISIBILITY
+   ═══════════════════════════════════════════════════════ */
+document.querySelectorAll('.tab-content').forEach(tc => {
+  if (!tc.classList.contains('active')) tc.style.display = 'none';
+});
+document.querySelectorAll('.tabs .tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    const parent = tab.closest('.card');
+    parent.querySelectorAll('.tab-content').forEach(c => { c.style.display = 'none'; c.classList.remove('active'); });
+    const target = document.getElementById(tab.dataset.tab);
+    if (target) { target.style.display = 'block'; target.classList.add('active'); }
+  });
+});
+
+/* ═══════════════════════════════════════════════════════
+   GEOCODER — Nominatim (OpenStreetMap, kostenlos, kein Key)
+   ═══════════════════════════════════════════════════════ */
+const geocoderState = {
+  lat: 50.11,
+  lon: 8.68,
+  name: 'Frankfurt am Main',
+  debounceTimer: null,
+};
+
+const geocoderInput = document.getElementById('geocoder-input');
+const geocoderResults = document.getElementById('geocoder-results');
+const geocoderCurrent = document.getElementById('geocoder-current');
+
+/* ── Input: detect address vs. coordinates ── */
+geocoderInput.addEventListener('input', () => {
+  clearTimeout(geocoderState.debounceTimer);
+  const val = geocoderInput.value.trim();
+  if (!val) { geocoderResults.classList.remove('visible'); return; }
+
+  // Check if user typed coordinates directly (e.g. "50.11, 8.68" or "50.11/8.68")
+  const coordMatch = val.match(/^(-?\d+\.?\d*)\s*[,/;\s]\s*(-?\d+\.?\d*)$/);
+  if (coordMatch) {
+    const lat = parseFloat(coordMatch[1]);
+    const lon = parseFloat(coordMatch[2]);
+    if (lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180) {
+      geocoderResults.innerHTML = `
+        <div class="geocoder-result" onclick="selectCoords(${lat}, ${lon}, 'Koordinaten: ${lat}, ${lon}')">
+          <span class="geo-name">📌 Koordinaten direkt verwenden</span>
+          <span class="geo-detail">${lat.toFixed(4)}, ${lon.toFixed(4)}</span>
+        </div>`;
+      geocoderResults.classList.add('visible');
+      // Also do reverse geocoding
+      reverseGeocode(lat, lon);
+      return;
+    }
+  }
+
+  // Otherwise: address search with debounce (Nominatim asks for 1s between requests)
+  geocoderState.debounceTimer = setTimeout(() => searchAddress(val), 600);
+});
+
+geocoderInput.addEventListener('keydown', e => {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    const first = geocoderResults.querySelector('.geocoder-result');
+    if (first) first.click();
+  }
+  if (e.key === 'Escape') geocoderResults.classList.remove('visible');
+});
+
+// Close results on outside click
+document.addEventListener('click', e => {
+  if (!e.target.closest('.geocoder-input-wrap')) {
+    geocoderResults.classList.remove('visible');
+  }
+});
+
+/* ── Nominatim forward search ── */
+async function searchAddress(query) {
+  try {
+    const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&addressdetails=1&limit=6&accept-language=de`;
+    const resp = await fetch(url, {
+      headers: { 'User-Agent': 'ClimateRiskDataHub/1.0' }
+    });
+    const results = await resp.json();
+
+    if (!results.length) {
+      geocoderResults.innerHTML = `
+        <div class="geocoder-result" style="cursor:default;color:var(--text-3)">
+          <span class="geo-name">Keine Ergebnisse für „${query}"</span>
+          <span class="geo-detail">Tipp: Versuche „Stadt, Land" oder direkte Koordinaten (lat, lon)</span>
+        </div>`;
+      geocoderResults.classList.add('visible');
+      return;
+    }
+
+    geocoderResults.innerHTML = results.map(r => {
+      const name = r.display_name.split(',').slice(0, 3).join(', ');
+      const type = translateOSMType(r.type, r.class);
+      return `
+        <div class="geocoder-result" onclick="selectCoords(${r.lat}, ${r.lon}, '${escHtml(name)}')">
+          <span class="geo-name">${escHtml(name)}</span>
+          <span class="geo-detail">${type} · ${parseFloat(r.lat).toFixed(4)}, ${parseFloat(r.lon).toFixed(4)}</span>
+        </div>`;
+    }).join('');
+    geocoderResults.classList.add('visible');
+  } catch(e) {
+    geocoderResults.innerHTML = `
+      <div class="geocoder-result" style="cursor:default;color:var(--red)">
+        <span class="geo-name">Fehler bei der Suche</span>
+        <span class="geo-detail">${e.message}</span>
+      </div>`;
+    geocoderResults.classList.add('visible');
+  }
+}
+
+/* ── Reverse geocode (coords → name) ── */
+async function reverseGeocode(lat, lon) {
+  try {
+    const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&accept-language=de`;
+    const resp = await fetch(url, {
+      headers: { 'User-Agent': 'ClimateRiskDataHub/1.0' }
+    });
+    const data = await resp.json();
+    if (data.display_name) {
+      const name = data.display_name.split(',').slice(0, 3).join(', ');
+      // Prepend a reverse result
+      geocoderResults.innerHTML = `
+        <div class="geocoder-result" onclick="selectCoords(${lat}, ${lon}, '${escHtml(name)}')">
+          <span class="geo-name">📌 ${escHtml(name)}</span>
+          <span class="geo-detail">${lat.toFixed(4)}, ${lon.toFixed(4)} · Koordinaten übernehmen</span>
+        </div>` + geocoderResults.innerHTML;
+    }
+  } catch(e) { /* silent */ }
+}
+
+/* ── Select a result ── */
+function selectCoords(lat, lon, name) {
+  lat = parseFloat(lat);
+  lon = parseFloat(lon);
+  geocoderState.lat = lat;
+  geocoderState.lon = lon;
+  geocoderState.name = name;
+
+  geocoderCurrent.innerHTML = `
+    <span>📍</span>
+    <span>${name}</span>
+    <span class="geo-coords">${lat.toFixed(4)}, ${lon.toFixed(4)}</span>`;
+
+  geocoderInput.value = '';
+  geocoderResults.classList.remove('visible');
+
+  // Automatically apply to all fields
+  applyGeocoderToAllFields();
+}
+
+/* ── Apply coordinates to ALL panel fields ── */
+function applyGeocoderToAllFields() {
+  const lat = geocoderState.lat;
+  const lon = geocoderState.lon;
+  const r = parseFloat(document.getElementById('geocoder-radius').value);
+
+  // Bounding box: N, W, S, E (CDS format)
+  const north = Math.min(90, lat + r).toFixed(2);
+  const south = Math.max(-90, lat - r).toFixed(2);
+  const west = Math.max(-180, lon - r).toFixed(2);
+  const east = Math.min(180, lon + r).toFixed(2);
+  const bboxNWSE = `${north},${west},${south},${east}`;
+  const bboxSWNE = `${south},${west},${north},${east}`; // OSM format
+  const bboxMinXYMaxXY = `${west},${south},${east},${north}`; // WMS format
+
+  // CDS / ADS / CMIP6 / Atlas: N,W,S,E
+  setVal('cds-area', bboxNWSE);
+  setVal('cmip6-area', bboxNWSE);
+  setVal('atlas-area', bboxNWSE);
+  setVal('ads-area', bboxNWSE);
+  setVal('batch-area', bboxNWSE);
+
+  // DWD: lat, lon
+  setVal('dwd-lat', lat.toFixed(4));
+  setVal('dwd-lon', lon.toFixed(4));
+
+  // OSM: S,W,N,E
+  setVal('osm-bbox', bboxSWNE);
+
+  // Marine: individual fields
+  setVal('marine-lat-min', south);
+  setVal('marine-lat-max', north);
+  setVal('marine-lon-min', west);
+  setVal('marine-lon-max', east);
+
+  // Land: MinX,MinY,MaxX,MaxY
+  setVal('land-bbox', bboxMinXYMaxXY);
+
+  // Flash the current display
+  geocoderCurrent.style.background = 'rgba(34,211,238,0.15)';
+  setTimeout(() => geocoderCurrent.style.background = '', 600);
+}
+
+function setVal(id, val) {
+  const el = document.getElementById(id);
+  if (el) el.value = val;
+}
+
+/* ── Helpers ── */
+function escHtml(str) {
+  return str.replace(/'/g, '&#39;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function translateOSMType(type, cls) {
+  const map = {
+    city: 'Stadt', town: 'Stadt', village: 'Gemeinde', hamlet: 'Weiler',
+    suburb: 'Stadtteil', borough: 'Bezirk', neighbourhood: 'Viertel',
+    county: 'Landkreis', state: 'Bundesland', country: 'Land',
+    administrative: 'Verwaltung', postcode: 'PLZ',
+    residential: 'Wohngebiet', industrial: 'Industriegebiet',
+    river: 'Fluss', stream: 'Bach', lake: 'See', water: 'Gewässer',
+    peak: 'Gipfel', forest: 'Wald', park: 'Park',
+    highway: 'Straße', street: 'Straße', road: 'Straße',
+    building: 'Gebäude', house: 'Haus',
+  };
+  return map[type] || map[cls] || type || '';
+}
+</script>
+</body>
+</html>
